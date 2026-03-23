@@ -1,0 +1,35 @@
+services:
+  backend-spring:
+    build: './spring-backend'
+    depends_on:
+      - postgres
+      - redis
+#    ports:
+#      - "8080"
+  ktor-service:
+    build: './ktor-service'
+#    depends_on:
+    ports:
+      - "3000:3000"
+  postgres:
+    image: 'postgres:latest'
+    mem_limit: 512m
+    environment:
+      - 'POSTGRES_DB=mydatabase'
+      - 'POSTGRES_PASSWORD=secret'
+      - 'POSTGRES_USER=myuser'
+    ports:
+      - "5432:5432"
+  redis:
+    image: 'redis:latest'
+    ports:
+      - "6379:6379"
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80" # Открываем только 80 порт наружу
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - ktor-service
+
