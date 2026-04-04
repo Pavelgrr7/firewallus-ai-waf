@@ -6,27 +6,18 @@ ktor:
   deployment:
     port: 3000
   kafka:
-    schema.registry.url:
-      - "SCHEMA_REGISTRY_URL"
-    common:
-      bootstrap.servers:
-        - "BOOTSTRAP_SERVERS"
-      # Additional attributes
-    admin:
-    # Additional attributes
-    consumer:
-      group.id: "my-group-id"
-      # Additional attributes
+    bootstrapServers: "kafka:29092"
+    consumerGroupId: "ktor-gateway-group"
+    producerClientId: "ktor-gateway-producer"
+
     producer:
-      client.id: "my-client-id"
-      # Additional attributes
+      # Обязательно укажи сериализаторы для строк (ключ) и JSON (значение)
+      key.serializer: org.apache.kafka.common.serialization.StringSerializer
+      value.serializer: org.apache.kafka.common.serialization.StringSerializer # Если шлешь JSON как обычную String
+
     topics:
-      - name: my-topic
+      # Меняем дефолтное имя на то, которое вы заложили в архитектуре
+      - name: traffic-logs
         partitions: 1
         configs:
           message.timestamp.type: CreateTime
-          # Additional attributes
-jwt:
-  domain: "https://jwt-provider-domain/"
-  audience: "jwt-audience"
-  realm: "ktor sample app"

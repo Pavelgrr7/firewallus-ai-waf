@@ -1,1 +1,5 @@
 /.idea/
+/spring-backend/.gitattributes
+/ktor-service/docs/.swagger-codegen-ignore
+/ktor-service/docs/.swagger-codegen/VERSION
+/hs_err_pid167100.log

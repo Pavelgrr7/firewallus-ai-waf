@@ -13,4 +13,5 @@ fun Application.module() {
     configureSecurity()
     configureHTTP()
     configureRouting()
+    configureKafka()
 }
