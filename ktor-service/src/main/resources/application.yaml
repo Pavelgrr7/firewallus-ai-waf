@@ -11,7 +11,6 @@ ktor:
     producerClientId: "ktor-gateway-producer"
 
     producer:
-      client.id: "ktor-gateway-producer"
       # Обязательно укажи сериализаторы для строк (ключ) и JSON (значение)
       key.serializer: org.apache.kafka.common.serialization.StringSerializer
       value.serializer: org.apache.kafka.common.serialization.StringSerializer # Если шлешь JSON как обычную String
@@ -22,7 +21,3 @@ ktor:
         partitions: 1
         configs:
           message.timestamp.type: CreateTime
-jwt:
-  domain: "https://jwt-provider-domain/"
-  audience: "jwt-audience"
-  realm: "ktor sample app"
