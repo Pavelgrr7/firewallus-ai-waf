@@ -1,4 +1,4 @@
-package com.pavelryzh
+package com.pavelryzh.plugins
 
 import io.ktor.server.application.*
 import org.apache.kafka.clients.admin.AdminClient
@@ -22,7 +22,7 @@ fun Application.configureKafka() {
     try {
         val adminClient = AdminClient.create(adminProperties)
         log.info("Kafka AdminClient successfully created connecting to $bootstrapServers")
-        // ... твой код работы с Kafka
+        // код работы с Kafka
     } catch (e: Exception) {
         log.error("Failed to connect to Kafka at $bootstrapServers", e)
     }

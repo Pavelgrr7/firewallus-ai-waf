@@ -1,5 +1,7 @@
 package com.pavelryzh
 
+import com.pavelryzh.plugins.configureKafka
+import com.pavelryzh.plugins.configureSerialization
 import io.ktor.server.application.*
 
 fun main(args: Array<String>) {
@@ -10,7 +12,7 @@ fun Application.module() {
     configureFrameworks()
     configureDatabases()
     configureSerialization()
-    configureSecurity()
+//    configureSecurity()
     configureHTTP()
     configureRouting()
     configureKafka()

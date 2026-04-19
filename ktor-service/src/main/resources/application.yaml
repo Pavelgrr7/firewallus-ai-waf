@@ -11,12 +11,10 @@ ktor:
     producerClientId: "ktor-gateway-producer"
 
     producer:
-      # Обязательно укажи сериализаторы для строк (ключ) и JSON (значение)
       key.serializer: org.apache.kafka.common.serialization.StringSerializer
-      value.serializer: org.apache.kafka.common.serialization.StringSerializer # Если шлешь JSON как обычную String
+      value.serializer: org.apache.kafka.common.serialization.StringSerializer
 
     topics:
-      # Меняем дефолтное имя на то, которое вы заложили в архитектуре
       - name: traffic-logs
         partitions: 1
         configs:
