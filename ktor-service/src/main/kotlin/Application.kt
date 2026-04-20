@@ -6,6 +6,7 @@ import com.pavelryzh.kafka.KafkaTrafficProducer
 import com.pavelryzh.plugins.configureRouting
 import io.ktor.server.application.*
 import io.ktor.server.netty.EngineMain
+import io.ktor.server.plugins.forwardedheaders.XForwardedHeaders
 import org.koin.ktor.ext.inject
 import plugins.configureDatabases
 
@@ -14,6 +15,7 @@ fun main(args: Array<String>) {
 }
 
 fun Application.module() {
+    install(XForwardedHeaders)
     configureDatabases()
     configureSerialization()
     configureHTTP()
