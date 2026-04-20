@@ -1,5 +1,8 @@
-package com.pavelryzh.service
+package com.pavelryzh.kafka
 
+import com.pavelryzh.service.HttpMethod
+import com.pavelryzh.service.TrafficEventDto
+import kotlinx.serialization.json.Json
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerRecord
 import java.util.Properties
@@ -22,21 +25,11 @@ class KafkaTrafficProducer(bootstrapServers: String) {
         producer = KafkaProducer(props)
     }
 
-    fun sendTrafficLog(ip: String, method: String, uri: String) {
-        // todo нормальная сериализация Data Class в JSON
-        val jsonPayload = """
-            {
-                "ip": "$ip",
-                "method": "$method",
-                "uri": "$uri",
-                "timestamp": ${System.currentTimeMillis()}
-            }
-        """.trimIndent()
-
+    fun send(event: TrafficEventDto) {
+        val jsonPayload = Json.encodeToString(event)
         // Все запросы с одного IP попадали - одна партиция Kafka
-        val record = ProducerRecord("traffic-logs", ip, jsonPayload)
-
-        // Фоновый поток Kafka I/O.
+        val record = ProducerRecord("traffic-logs", event.ip, jsonPayload)
+        // Фоновый поток Kafka I/O
         producer.send(record) { metadata, exception ->
             if (exception != null) {
                 println("[WAF Shadowing] Failed to send log to Kafka: ${exception.message}")
