@@ -1,4 +1,4 @@
-package com.pavelryzh
+package com.pavelryzh.plugins
 
 import io.ktor.http.*
 import io.ktor.openapi.*
