@@ -18,7 +18,7 @@ kotlin {
 dependencies {
     implementation(libs.koin.ktor)
     implementation(libs.koin.logger.slf4j)
-    implementation(libs.ktor.server.kafka)
+    implementation(libs.kafka.clients)
     implementation(libs.ktor.client.core)
     implementation(libs.ktor.server.content.negotiation)
     implementation(libs.ktor.server.core)
