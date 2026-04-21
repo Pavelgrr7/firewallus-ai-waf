@@ -6,11 +6,16 @@ import org.koin.dsl.module
 import org.koin.ktor.plugin.Koin
 import org.koin.logger.slf4jLogger
 
-val appModule = module {
-    single { KafkaTrafficProducer("kafka:29092") }
-}
+
 
 fun Application.configureDI() {
+    val bootstrapServers = environment.config
+        .propertyOrNull("ktor.kafka.common.bootstrap.servers")?.getString()
+        ?: "kafka:29092"
+    val appModule = module {
+        single { KafkaTrafficProducer(bootstrapServers) }
+    }
+
     install(Koin) {
         slf4jLogger()
         modules(appModule)
