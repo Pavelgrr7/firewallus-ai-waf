@@ -18,11 +18,12 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
           prompt: |
             Review the PR changes for potential bugs, style issues,
             and adherence to our standards. Provide a detailed comment
             with findings and suggestions.
-          claude_args: "--model claude-sonnet-4.6"
+          claude_args: "--model claude-sonnet-4-6"
           show_full_output: true
 
         env:
