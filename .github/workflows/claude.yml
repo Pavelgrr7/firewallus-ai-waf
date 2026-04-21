@@ -1,7 +1,7 @@
 name: claude.yml
 on:
-  pull_request:
-    types: [opened, synchronize]
+  pull_request_target:
+    types: [ opened, synchronize ]
 
 jobs:
   review:
@@ -12,7 +12,8 @@ jobs:
       id-token: write
     steps:
       - uses: actions/checkout@v4
-        with: { fetch-depth: 0 }
+        fetch-depth: 0
+        ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Run Claude Code Review
         uses: anthropics/claude-code-action@v1
@@ -22,6 +23,7 @@ jobs:
             Review the PR changes for potential bugs, style issues,
             and adherence to our standards. Provide a detailed comment
             with findings and suggestions.
-          claude_args: "--model claude-opus-4.7"
+          claude_args: "--model claude-sonnet-4-6"
+          show_full_output: true
         env:
           ANTHROPIC_BASE_URL: ${{ secrets.ANTHROPIC_BASE_URL }}
