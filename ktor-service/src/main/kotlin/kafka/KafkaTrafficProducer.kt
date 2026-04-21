@@ -1,5 +1,8 @@
-package com.pavelryzh.service
+package com.pavelryzh.kafka
 
+import com.pavelryzh.service.HttpMethod
+import com.pavelryzh.service.TrafficEventDto
+import kotlinx.serialization.json.Json
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerRecord
 import java.util.Properties
@@ -22,21 +25,16 @@ class KafkaTrafficProducer(bootstrapServers: String) {
         producer = KafkaProducer(props)
     }
 
-    fun sendTrafficLog(ip: String, method: String, uri: String) {
-        // todo нормальная сериализация Data Class в JSON
-        val jsonPayload = """
-            {
-                "ip": "$ip",
-                "method": "$method",
-                "uri": "$uri",
-                "timestamp": ${System.currentTimeMillis()}
-            }
-        """.trimIndent()
+    fun send(event: TrafficEventDto) {
+        val jsonPayload = Json.encodeToString(event)
+        // На данный момент нет логики отправки тела запроса (либо части тела запроса при привышении лимита)
+        // Сейчас цель - показать рабочий роут и корректную отправку данных в кафку.
+        // Позже отдельным PR будет реализована вся логика сбора и отправки информации о запросах
+
 
         // Все запросы с одного IP попадали - одна партиция Kafka
-        val record = ProducerRecord("traffic-logs", ip, jsonPayload)
-
-        // Фоновый поток Kafka I/O.
+        val record = ProducerRecord("traffic-logs", event.ip, jsonPayload)
+        // Фоновый поток Kafka I/O
         producer.send(record) { metadata, exception ->
             if (exception != null) {
                 println("[WAF Shadowing] Failed to send log to Kafka: ${exception.message}")
