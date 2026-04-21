@@ -1,4 +1,4 @@
-package com.pavelryzh
+package com.pavelryzh.plugins
 
 import io.github.flaxoos.ktor.server.plugins.kafka.*
 import io.ktor.client.*
