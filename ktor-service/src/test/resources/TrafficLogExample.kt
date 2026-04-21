@@ -1,4 +1,5 @@
-package com.pavelryzh
+import kotlin.text.trimIndent
+
 
 val jsonPayload = """
 {
