@@ -12,8 +12,10 @@ jobs:
       id-token: write
     steps:
       - uses: actions/checkout@v4
-        fetch-depth: 0
-        ref: ${{ github.event.pull_request.head.sha }}
+        with: {
+          fetch-depth: 0,
+          ref: ${{ github.event.pull_request.head.sha }}
+        }
 
       - name: Run Claude Code Review
         uses: anthropics/claude-code-action@v1
@@ -25,5 +27,6 @@ jobs:
             with findings and suggestions.
           claude_args: "--model claude-sonnet-4-6"
           show_full_output: true
+
         env:
           ANTHROPIC_BASE_URL: ${{ secrets.ANTHROPIC_BASE_URL }}
