@@ -20,8 +20,11 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           prompt: |
             Review the PR changes for potential bugs, style issues,
-            and adherence to our standards. Provide a detailed comment
-            with findings and suggestions.
+            and adherence to our standards. 
+            
+            IMPORTANT: You MUST post your detailed review summary and findings as a general comment on this PR using the GitHub CLI.
+            Use the following command:
+            gh pr comment ${{ github.event.pull_request.number }} --body "<your detailed review here>"
           claude_args: "--model claude-sonnet-4-6"
           show_full_output: true
 
