@@ -9,7 +9,7 @@ import com.pavelryzh.plugins.configureRouting
 import io.ktor.server.application.*
 import io.ktor.server.netty.EngineMain
 import io.ktor.server.plugins.forwardedheaders.XForwardedHeaders
-import org.koin.ktor.ext.inject
+import org.koin.ktor.ext.get
 import com.pavelryzh.plugins.configureDatabases
 
 fun main(args: Array<String>) {
@@ -26,7 +26,7 @@ fun Application.module() {
     configureRouting()
 
     monitor.subscribe(ApplicationStopped) {
-        val kafkaProducer by inject<KafkaTrafficProducer>()
+        val kafkaProducer = get<KafkaTrafficProducer>()
         kafkaProducer.close()
         log.info("KafkaTrafficProducer closed successfully.")
     }
