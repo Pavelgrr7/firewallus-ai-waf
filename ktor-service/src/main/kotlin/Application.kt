@@ -1,3 +1,5 @@
+package com.pavelryzh
+
 import com.pavelryzh.plugins.configureDI
 import com.pavelryzh.plugins.configureHTTP
 import com.pavelryzh.plugins.configureKafka
@@ -8,7 +10,7 @@ import io.ktor.server.application.*
 import io.ktor.server.netty.EngineMain
 import io.ktor.server.plugins.forwardedheaders.XForwardedHeaders
 import org.koin.ktor.ext.inject
-import plugins.configureDatabases
+import com.pavelryzh.plugins.configureDatabases
 
 fun main(args: Array<String>) {
     EngineMain.main(args)
