@@ -25,7 +25,9 @@ jobs:
             IMPORTANT: You MUST post your detailed review summary and findings as a general comment on this PR using the GitHub CLI.
             Use the following command:
             gh pr comment ${{ github.event.pull_request.number }} --body "<your detailed review here>"
-          claude_args: "--model claude-sonnet-4-6"
+          claude_args: >-
+            --model claude-sonnet-4-6
+            --allowed-tools "Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr comment:*),Bash(gh pr review:*),Bash(git fetch *),Bash(git checkout *)"
           show_full_output: true
 
         env:
