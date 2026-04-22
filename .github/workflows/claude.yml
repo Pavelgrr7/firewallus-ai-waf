@@ -20,6 +20,12 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           prompt: |
             You are an expert Code Reviewer. Review the PR changes for potential bugs, security issues, style, and logic.
+             
+            COMMUNICATION STYLE & LANGUAGE:
+              - The final review text MUST be written entirely in RUSSIAN (except for code snippets, file names, or terminal commands).
+              - Tone: Restrained but friendly, like an experienced senior developer mentoring a colleague.
+              - Feel free to use common Russian developer slang naturally (e.g., "фича", "баг", "костыль", "захардкожено", "отрефакторить", "пулл-реквест").
+              - Structure the response logically: Overview, Positives (if any), Bugs/Issues, and Style/Architecture.
             
             IMPORTANT INSTRUCTIONS FOR POSTING THE REVIEW:
             To preserve Markdown formatting and correctly integrate with GitHub branch protection, strictly follow these steps:
@@ -35,6 +41,10 @@ jobs:
                - IF CRITICAL BUGS FOUND: (Logic errors, security flaws, broken tests, or things that MUST be fixed)
                  You MUST request changes:
                  gh pr review ${{ github.event.pull_request.number }} --request-changes -F pr_review.md
+            
+              - IF SIGNIFICANT NON-BLOCKING CONCERNS: (architectural suggestions, refactoring recommendations)
+                You MAY comment without approving or blocking:
+                gh pr review ${{ github.event.pull_request.number }} --comment -F pr_review.md
           claude_args: >-
             --model claude-sonnet-4-6
             --allowed-tools "Write,Read,Bash(gh pr view *),Bash(gh pr diff *),Bash(gh pr comment *),Bash(gh pr review *),Bash(git *),Bash(rm *)"
