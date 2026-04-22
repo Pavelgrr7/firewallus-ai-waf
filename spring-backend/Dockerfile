@@ -20,9 +20,10 @@ FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 
 RUN addgroup -S spring && adduser -S spring -G spring
-USER spring:spring
 
-COPY --from=builder /app/build/libs/*-SNAPSHOT.jar app.jar
+COPY --from=builder --chown=spring:spring /app/build/libs/app.jar app.jar
+
+USER spring:spring
 
 EXPOSE 8080
 

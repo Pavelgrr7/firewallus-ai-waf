@@ -1,6 +1,6 @@
 CREATE TYPE RULETYPE AS ENUM ('block_default', 'pass', 'perm_block');
 CREATE TYPE ACTIONTYPE AS ENUM ('block', 'unblock', 'create_rule');
-CREATE TYPE INCIDENTTYPE AS ENUM ('sql_injection', 'slow_attack', 'brutforce');
+CREATE TYPE INCIDENTTYPE AS ENUM ('sql_injection', 'slow_attack', 'bruteforce');
 
 CREATE TABLE admins (
                         admin_id UUID PRIMARY KEY,
@@ -10,7 +10,7 @@ CREATE TABLE admins (
 
 CREATE TABLE rules (
                        rule_id SERIAL PRIMARY KEY,
-                       name VARCHAR(64) UNIQUE,
+                       name VARCHAR(64) UNIQUE NOT NULL,
                        rule_type RULETYPE NOT NULL,
                        condition_value VARCHAR(255),
                        is_active BOOLEAN NOT NULL DEFAULT true,
