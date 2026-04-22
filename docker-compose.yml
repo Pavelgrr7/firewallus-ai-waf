@@ -11,8 +11,8 @@ services:
         condition: service_healthy
       postgres:
         condition: service_healthy
-#     ports:
-#      - "8080:8080"
+    # ports:
+    #  - "8080:8080"
 
   ktor-service:
     build: './ktor-service'

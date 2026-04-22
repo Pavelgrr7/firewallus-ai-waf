@@ -11,6 +11,7 @@ COPY build.gradle settings.gradle ./
 
 COPY src/ src/
 
+# Результат /root/.gradle на уровне хоста Docker
 RUN --mount=type=cache,target=/root/.gradle \
     ./gradlew bootJar -x test --no-daemon
 
