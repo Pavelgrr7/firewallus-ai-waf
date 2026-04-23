@@ -13,14 +13,21 @@ import io.ktor.server.application.ApplicationCall
 import io.ktor.server.plugins.origin
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondText
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeoutOrNull
 
 class TrafficService(
     private val kafkaProducer: KafkaTrafficProducer,
     private val redisWafClient: RedisWafClient,
     ) : AutoCloseable {
-    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    private val exceptionHandler = CoroutineExceptionHandler { _, ex ->
+        logger.error("Failed to send traffic log to Kafka", ex)
+    }
+
+    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO + exceptionHandler)
 
     private val logger = logger()
 
@@ -61,7 +68,9 @@ class TrafficService(
     override fun close() {
         serviceScope.cancel()
         runBlocking {
-            serviceScope.coroutineContext[Job]?.join()
+            withTimeoutOrNull(5000) {
+                serviceScope.coroutineContext[Job]?.join()
+            } ?: logger.warn("ServiceScope shutdown timed out")
         }
     }
 

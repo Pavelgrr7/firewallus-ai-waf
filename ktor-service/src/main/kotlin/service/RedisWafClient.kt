@@ -8,26 +8,22 @@ import kotlinx.coroutines.future.await
 class RedisWafClient(redisUri: String) : AutoCloseable {
 
     private val client: RedisClient = RedisClient.create(redisUri)
-    private val connection: StatefulRedisConnection<String, String>
-    private val asyncApi: RedisAsyncCommands<String, String>
-
-    init {
-        var conn: StatefulRedisConnection<String, String>? = null
-        try {
-            conn = client.connect()
-            asyncApi = conn.async()
-            connection = conn
-        } catch (e: Exception) {
-            conn?.close()
-            client.shutdown()
-            throw e
-        }
+    // При первом вызове Kotlin сам безопасно инициализирует
+    // connection и asyncApi. Если Redis лежит, вылетит исключение,
+    // которое поймает runCatching в TrafficService
+    // ЭТО Thread-Safe НА 100%
+    private val connection: StatefulRedisConnection<String, String> by lazy {
+        client.connect()
+    }
+    private val asyncApi: RedisAsyncCommands<String, String> by lazy {
+        connection.async()
     }
 
     suspend fun isIpBanned(ip: String): Boolean {
+        val sanitized = sanitizeIp(ip)
         val keysFound = asyncApi.exists(
-            "$BAN_KEY_PREFIX:$ip",
-            "$MANUAL_BAN_KEY_PREFIX:$ip"
+            "$BAN_KEY_PREFIX:$sanitized",
+            "$MANUAL_BAN_KEY_PREFIX:$sanitized"
         ).await()
 
         return keysFound > 0L
@@ -38,10 +34,14 @@ class RedisWafClient(redisUri: String) : AutoCloseable {
     }
 
     override fun close() {
-        connection.close()
+        // Метод shutdown() у Lettuce сам корректно закроет все открытые соединения,
+        // если они вообще были созданы
         client.shutdown()
     }
 
+    private fun sanitizeIp(ip: String): String {
+        return ip.filter { it.isLetterOrDigit() || it == '.' || it == ':' }
+    }
     companion object {
         private const val BAN_KEY_PREFIX = "waf:ban:ip:"
         private const val MANUAL_BAN_KEY_PREFIX = "waf:manual_ban:ip:"

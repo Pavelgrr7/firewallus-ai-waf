@@ -37,9 +37,9 @@ class KafkaTrafficProducer(bootstrapServers: String): AutoCloseable {
         // Фоновый поток Kafka I/O
         producer.send(record) { metadata, exception ->
             if (exception != null) {
-                logger.info("[WAF Shadowing] Failed to send log to Kafka: ${exception.message}")
+                logger.error("[WAF Shadowing] Failed to send log to Kafka: ${exception.message}")
             } else {
-                logger.info("[WAF Shadowing] Log sent to partition ${metadata.partition()} at offset ${metadata.offset()}")
+                logger.debug("[WAF Shadowing] Log sent to partition ${metadata.partition()} at offset ${metadata.offset()}")
             }
         }
     }
