@@ -21,6 +21,8 @@ class TrafficService(
     private val redisWafClient: RedisWafClient,
     ) : AutoCloseable {
 
+    private val logger = logger()
+
     private val exceptionHandler = CoroutineExceptionHandler { _, ex ->
         logger.error("Failed to send traffic log to Kafka", ex)
     }
@@ -28,7 +30,6 @@ class TrafficService(
 
     private val serviceScope = CoroutineScope(scopeJob + Dispatchers.IO + exceptionHandler)
 
-    private val logger = logger()
 
     suspend fun handleRequest(call: ApplicationCall) {
         val ip = call.request.origin.remoteHost

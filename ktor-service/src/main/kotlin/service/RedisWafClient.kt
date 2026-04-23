@@ -12,6 +12,7 @@ class RedisWafClient(redisUri: String) : AutoCloseable {
     // При первом вызове Kotlin сам безопасно инициализирует
     // connection и asyncApi. Если Redis лежит, вылетит исключение,
     // которое поймает runCatching в TrafficService
+    // ПОНИМАЮ ВСЕ РИСКИ И БЕРУ ОТВЕТСТВЕННОСТЬ ЛИЧНО НА СЕБЯ
     private val connection: StatefulRedisConnection<String, String> by lazy {
         client.connect()
     }
@@ -23,13 +24,20 @@ class RedisWafClient(redisUri: String) : AutoCloseable {
 
     suspend fun isIpBanned(ip: String): Boolean {
         if (isClosed.get()) throw IllegalStateException("RedisWafClient is closed")
-        val sanitized = sanitizeIp(ip)
-        val keysFound = asyncApi.exists(
-            "$BAN_KEY_PREFIX:$sanitized",
-            "$MANUAL_BAN_KEY_PREFIX:$sanitized"
-        ).await()
 
-        return keysFound > 0L
+        return runCatching {
+            val sanitized = sanitizeIp(ip)
+            val keysFound = asyncApi.exists(
+                "$BAN_KEY_PREFIX:$sanitized",
+                "$MANUAL_BAN_KEY_PREFIX:$sanitized"
+            ).await()
+            keysFound > 0L
+        }.getOrElse { ex ->
+            if (isClosed.get()) {
+                throw IllegalStateException("RedisWafClient is closed", ex)
+            }
+            throw ex
+        }
     }
 
     suspend fun getActiveRules(): String? {
