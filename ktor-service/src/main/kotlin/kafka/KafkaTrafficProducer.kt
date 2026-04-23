@@ -1,15 +1,16 @@
 package com.pavelryzh.kafka
 
-import com.pavelryzh.service.HttpMethod
+import com.pavelryzh.plugins.logger
 import com.pavelryzh.service.TrafficEventDto
 import kotlinx.serialization.json.Json
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerRecord
 import java.util.Properties
 
-class KafkaTrafficProducer(bootstrapServers: String) {
+class KafkaTrafficProducer(bootstrapServers: String): AutoCloseable {
 
     private val producer: KafkaProducer<String, String>
+    private val logger = logger()
 
     init {
         val props = Properties().apply {
@@ -31,20 +32,19 @@ class KafkaTrafficProducer(bootstrapServers: String) {
         // Сейчас цель - показать рабочий роут и корректную отправку данных в кафку.
         // Позже отдельным PR будет реализована вся логика сбора и отправки информации о запросах
 
-
         // Все запросы с одного IP попадали - одна партиция Kafka
         val record = ProducerRecord("traffic-logs", event.ip, jsonPayload)
         // Фоновый поток Kafka I/O
         producer.send(record) { metadata, exception ->
             if (exception != null) {
-                println("[WAF Shadowing] Failed to send log to Kafka: ${exception.message}")
+                logger.error("[WAF Shadowing] Failed to send log to Kafka: ${exception.message}")
             } else {
-                println("[WAF Shadowing] Log sent to partition ${metadata.partition()} at offset ${metadata.offset()}")
+                logger.debug("[WAF Shadowing] Log sent to partition ${metadata.partition()} at offset ${metadata.offset()}")
             }
         }
     }
 
-    fun close() {
+    override fun close() {
         producer.close()
     }
 }
