@@ -7,7 +7,7 @@ import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerRecord
 import java.util.Properties
 
-class KafkaTrafficProducer(bootstrapServers: String) {
+class KafkaTrafficProducer(bootstrapServers: String): AutoCloseable {
 
     private val producer: KafkaProducer<String, String>
 
@@ -44,7 +44,7 @@ class KafkaTrafficProducer(bootstrapServers: String) {
         }
     }
 
-    fun close() {
+    override fun close() {
         producer.close()
     }
 }

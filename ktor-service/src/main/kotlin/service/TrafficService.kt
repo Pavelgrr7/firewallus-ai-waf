@@ -8,7 +8,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 
 
-class TrafficService(val kafkaProducer: KafkaTrafficProducer) {
+class TrafficService(val kafkaProducer: KafkaTrafficProducer, redisWafClient: RedisWafClient) : AutoCloseable {
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     fun processTraffic(event: TrafficEventDto) {
@@ -21,7 +21,7 @@ class TrafficService(val kafkaProducer: KafkaTrafficProducer) {
         }
     }
 
-    fun stop() {
+    override fun close() {
         serviceScope.cancel()
     }
 

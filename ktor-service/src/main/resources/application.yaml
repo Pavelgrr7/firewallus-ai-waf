@@ -19,3 +19,5 @@ ktor:
         partitions: 1
         configs:
           message.timestamp.type: CreateTime
+    redis:
+      url: "redis://redis:6379"
