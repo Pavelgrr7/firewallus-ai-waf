@@ -13,6 +13,7 @@ import io.ktor.server.plugins.origin
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondText
 import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeoutOrNull
 
@@ -66,11 +67,14 @@ class TrafficService(
     }
 
     override fun close() {
-        scopeJob.cancel()
         runBlocking {
+            scopeJob.cancel()
             withTimeoutOrNull(5000) {
                 scopeJob.join()
-            } ?: logger.warn("ServiceScope shutdown timed out after 5s")
+            } ?: run {
+                logger.error("ServiceScope shutdown timed out, forcing cancellation")
+                scopeJob.cancelChildren()
+            }
         }
     }
 

@@ -27,17 +27,19 @@ class RedisWafClient(redisUri: String) : AutoCloseable {
 
         return runCatching {
             val sanitized = sanitizeIp(ip)
-            val keysFound = asyncApi.exists(
+            asyncApi.exists(
                 "$BAN_KEY_PREFIX:$sanitized",
                 "$MANUAL_BAN_KEY_PREFIX:$sanitized"
             ).await()
-            keysFound > 0L
-        }.getOrElse { ex ->
-            if (isClosed.get()) {
-                throw IllegalStateException("RedisWafClient is closed", ex)
+        }.fold(
+            onSuccess = { it > 0L },
+            onFailure = { ex ->
+                if (isClosed.get()) {
+                    throw IllegalStateException("RedisWafClient is closed during operation", ex)
+                }
+                false
             }
-            throw ex
-        }
+        )
     }
 
     suspend fun getActiveRules(): String? {
@@ -51,11 +53,19 @@ class RedisWafClient(redisUri: String) : AutoCloseable {
         }
     }
 
+    // НА ДАННОМ ЭТАПЕ НЕ НУЖНА ИДЕАЛЬНАЯ PROD-READY ПРОВЕРКА
+    // ДОСТАТОЧНО БАЗОВОГО МЕТОДА, КОТОРЫЙ БУДЕТ ДЕТАЛЬНО ПРОРАБОТАН В БУДУЩЕМ
     private fun sanitizeIp(ip: String): String {
-        return runCatching {
-            java.net.InetAddress.getByName(ip).hostAddress
-        }.getOrElse {
-            ip.filter { it.isLetterOrDigit() || it == '.' || it == ':' }
+        val ipv4Regex = Regex("""^(\d{1,3}\.){3}\d{1,3}$""")
+        val ipv6Regex = Regex("""^([0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4}$""")
+
+        return when {
+            ipv4Regex.matches(ip) || ipv6Regex.matches(ip) -> {
+                runCatching {
+                    java.net.InetAddress.getByName(ip).hostAddress
+                }.getOrElse { ip }
+            }
+            else -> throw IllegalArgumentException("Invalid IP format: $ip")
         }
     }
     companion object {
