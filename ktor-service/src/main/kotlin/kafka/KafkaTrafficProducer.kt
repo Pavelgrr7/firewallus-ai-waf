@@ -31,7 +31,6 @@ class KafkaTrafficProducer(bootstrapServers: String): AutoCloseable {
         // Сейчас цель - показать рабочий роут и корректную отправку данных в кафку.
         // Позже отдельным PR будет реализована вся логика сбора и отправки информации о запросах
 
-
         // Все запросы с одного IP попадали - одна партиция Kafka
         val record = ProducerRecord("traffic-logs", event.ip, jsonPayload)
         // Фоновый поток Kafka I/O
