@@ -19,8 +19,8 @@ jobs:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
           prompt: |
-            You are an expert Code Reviewer. Review the PR changes for potential bugs, security issues, style, and logic.
-             
+            Review the PR changes for potential bugs, security issues, style, and logic.
+            
             COMMUNICATION STYLE & LANGUAGE:
               - The final review text MUST be written entirely in RUSSIAN (except for code snippets, file names, or terminal commands).
               - Tone: Restrained but friendly, like an experienced senior developer mentoring a colleague.
