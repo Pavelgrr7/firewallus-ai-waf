@@ -6,13 +6,15 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
-import  com.pavelryzh.plugins.logger
+import com.pavelryzh.plugins.logger
 import com.pavelryzh.routes.extractTrafficLog
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.plugins.origin
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondText
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.runBlocking
 
 class TrafficService(
     private val kafkaProducer: KafkaTrafficProducer,
@@ -25,6 +27,7 @@ class TrafficService(
     suspend fun handleRequest(call: ApplicationCall) {
         val ip = call.request.origin.remoteHost
 
+        // Fail-Open: если Redis недоступен, разрешаем трафик (безопаснее, чем Fail-Closed)
         val isBanned = runCatching { redisWafClient.isIpBanned(ip) }
             .onFailure { logger.error("Redis is down, allowing traffic (Fail-Open)", it) }
             .getOrDefault(false)
@@ -38,9 +41,9 @@ class TrafficService(
         // val rules = redis.getActiveRules()
         // if (violatesRules(call, rules)) { ... return }
 
+        val trafficLog = extractTrafficLog(call)
         // корутина не блокирует основной поток запроса
         serviceScope.launch {
-            val trafficLog = extractTrafficLog(call)
             kafkaProducer.send(trafficLog)
         }
 
@@ -57,6 +60,9 @@ class TrafficService(
 
     override fun close() {
         serviceScope.cancel()
+        runBlocking {
+            serviceScope.coroutineContext[Job]?.join()
+        }
     }
 
 }

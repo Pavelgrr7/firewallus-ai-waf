@@ -36,5 +36,4 @@ dependencies {
     implementation("io.lettuce:lettuce-core:6.3.2.RELEASE")
     testImplementation(libs.ktor.server.test.host)
     testImplementation(libs.kotlin.test.junit)
-
 }

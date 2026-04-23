@@ -8,19 +8,20 @@ import kotlinx.coroutines.future.await
 class RedisWafClient(redisUri: String) : AutoCloseable {
 
     private val client: RedisClient = RedisClient.create(redisUri)
+    private val connection: StatefulRedisConnection<String, String>
+    private val asyncApi: RedisAsyncCommands<String, String>
 
-    private val connection: StatefulRedisConnection<String, String> = try {
-        client.connect()
-    } catch (e: Exception) {
-        client.shutdown()
-        throw e
-    }
-    private val asyncApi: RedisAsyncCommands<String, String> = try {
-        connection.async()
-    } catch (e: Exception) {
-        connection.close()
-        client.shutdown()
-        throw e
+    init {
+        var conn: StatefulRedisConnection<String, String>? = null
+        try {
+            conn = client.connect()
+            asyncApi = conn.async()
+            connection = conn
+        } catch (e: Exception) {
+            conn?.close()
+            client.shutdown()
+            throw e
+        }
     }
 
     suspend fun isIpBanned(ip: String): Boolean {
