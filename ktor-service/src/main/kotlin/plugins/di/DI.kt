@@ -14,7 +14,7 @@ fun Application.configureDI() {
     val lifecycleLogger = LoggerFactory.getLogger("Lifecycle")
 
     val redisUri = environment.config
-        .propertyOrNull("ktor.redis.uri")?.getString()
+        .propertyOrNull("ktor.redis.url")?.getString()
         ?: "redis://redis:6379"
 
     val bootstrapServers = environment.config
@@ -22,9 +22,9 @@ fun Application.configureDI() {
         ?: "kafka:29092"
 
     val appModule = module {
-        single { RedisWafClient(redisUri) } onCloseSafely lifecycleLogger
-        single { KafkaTrafficProducer(bootstrapServers) } onCloseSafely lifecycleLogger
-        single { TrafficService(get(), get()) } onCloseSafely lifecycleLogger
+        single { RedisWafClient(redisUri) } onCloseWith lifecycleLogger
+        single { KafkaTrafficProducer(bootstrapServers) } onCloseWith lifecycleLogger
+        single { TrafficService(get(), get()) } onCloseWith lifecycleLogger
     }
 
     install(Koin) {

@@ -7,7 +7,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 
-
+// TODO: integrate redisWafClient with traffic pipeline
 class TrafficService(val kafkaProducer: KafkaTrafficProducer, redisWafClient: RedisWafClient) : AutoCloseable {
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
