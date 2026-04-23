@@ -8,17 +8,19 @@ import kotlinx.coroutines.future.await
 class RedisWafClient(redisUri: String) : AutoCloseable {
 
     private val client: RedisClient = RedisClient.create(redisUri)
-    private val connection: StatefulRedisConnection<String, String>
-    private val asyncApi: RedisAsyncCommands<String, String>
 
-    init {
-        try {
-            connection = client.connect()
-            asyncApi = connection.async()
-        } catch (e: Exception) {
-            client.shutdown()
-            throw e
-        }
+    private val connection: StatefulRedisConnection<String, String> = try {
+        client.connect()
+    } catch (e: Exception) {
+        client.shutdown()
+        throw e
+    }
+    private val asyncApi: RedisAsyncCommands<String, String> = try {
+        connection.async()
+    } catch (e: Exception) {
+        connection.close()
+        client.shutdown()
+        throw e
     }
 
     suspend fun isIpBanned(ip: String): Boolean {
@@ -31,7 +33,7 @@ class RedisWafClient(redisUri: String) : AutoCloseable {
     }
 
     suspend fun getActiveRules(): String? {
-        return asyncApi.get("waf:active_rules").await()
+        return asyncApi.get(ACTIVE_RULES).await()
     }
 
     override fun close() {
@@ -42,5 +44,6 @@ class RedisWafClient(redisUri: String) : AutoCloseable {
     companion object {
         private const val BAN_KEY_PREFIX = "waf:ban:ip:"
         private const val MANUAL_BAN_KEY_PREFIX = "waf:manual_ban:ip:"
+        private const val ACTIVE_RULES = "waf:active_rules"
     }
 }

@@ -1,6 +1,6 @@
 package com.pavelryzh.kafka
 
-import com.pavelryzh.service.HttpMethod
+import com.pavelryzh.plugins.logger
 import com.pavelryzh.service.TrafficEventDto
 import kotlinx.serialization.json.Json
 import org.apache.kafka.clients.producer.KafkaProducer
@@ -10,6 +10,7 @@ import java.util.Properties
 class KafkaTrafficProducer(bootstrapServers: String): AutoCloseable {
 
     private val producer: KafkaProducer<String, String>
+    private val logger = logger()
 
     init {
         val props = Properties().apply {
@@ -36,9 +37,9 @@ class KafkaTrafficProducer(bootstrapServers: String): AutoCloseable {
         // Фоновый поток Kafka I/O
         producer.send(record) { metadata, exception ->
             if (exception != null) {
-                println("[WAF Shadowing] Failed to send log to Kafka: ${exception.message}")
+                logger.info("[WAF Shadowing] Failed to send log to Kafka: ${exception.message}")
             } else {
-                println("[WAF Shadowing] Log sent to partition ${metadata.partition()} at offset ${metadata.offset()}")
+                logger.info("[WAF Shadowing] Log sent to partition ${metadata.partition()} at offset ${metadata.offset()}")
             }
         }
     }
