@@ -4,7 +4,6 @@ import com.pavelryzh.kafka.KafkaTrafficProducer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import com.pavelryzh.plugins.logger
 import com.pavelryzh.routes.extractTrafficLog
@@ -14,7 +13,6 @@ import io.ktor.server.plugins.origin
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondText
 import kotlinx.coroutines.CoroutineExceptionHandler
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeoutOrNull
 
@@ -26,8 +24,9 @@ class TrafficService(
     private val exceptionHandler = CoroutineExceptionHandler { _, ex ->
         logger.error("Failed to send traffic log to Kafka", ex)
     }
+    private val scopeJob = SupervisorJob()
 
-    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO + exceptionHandler)
+    private val serviceScope = CoroutineScope(scopeJob + Dispatchers.IO + exceptionHandler)
 
     private val logger = logger()
 
@@ -66,11 +65,11 @@ class TrafficService(
     }
 
     override fun close() {
-        serviceScope.cancel()
+        scopeJob.cancel()
         runBlocking {
             withTimeoutOrNull(5000) {
-                serviceScope.coroutineContext[Job]?.join()
-            } ?: logger.warn("ServiceScope shutdown timed out")
+                scopeJob.join()
+            } ?: logger.warn("ServiceScope shutdown timed out after 5s")
         }
     }
 

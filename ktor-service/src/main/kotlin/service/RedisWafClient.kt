@@ -4,6 +4,7 @@ import io.lettuce.core.RedisClient
 import io.lettuce.core.api.StatefulRedisConnection
 import io.lettuce.core.api.async.RedisAsyncCommands
 import kotlinx.coroutines.future.await
+import java.util.concurrent.atomic.AtomicBoolean
 
 class RedisWafClient(redisUri: String) : AutoCloseable {
 
@@ -11,7 +12,6 @@ class RedisWafClient(redisUri: String) : AutoCloseable {
     // При первом вызове Kotlin сам безопасно инициализирует
     // connection и asyncApi. Если Redis лежит, вылетит исключение,
     // которое поймает runCatching в TrafficService
-    // ЭТО Thread-Safe НА 100%
     private val connection: StatefulRedisConnection<String, String> by lazy {
         client.connect()
     }
@@ -19,7 +19,10 @@ class RedisWafClient(redisUri: String) : AutoCloseable {
         connection.async()
     }
 
+    private val isClosed = AtomicBoolean(false)
+
     suspend fun isIpBanned(ip: String): Boolean {
+        if (isClosed.get()) throw IllegalStateException("RedisWafClient is closed")
         val sanitized = sanitizeIp(ip)
         val keysFound = asyncApi.exists(
             "$BAN_KEY_PREFIX:$sanitized",
@@ -34,17 +37,23 @@ class RedisWafClient(redisUri: String) : AutoCloseable {
     }
 
     override fun close() {
-        // Метод shutdown() у Lettuce сам корректно закроет все открытые соединения,
-        // если они вообще были созданы
-        client.shutdown()
+        if (isClosed.compareAndSet(false, true)) {
+            connection.close()
+            client.shutdown()
+        }
     }
 
     private fun sanitizeIp(ip: String): String {
-        return ip.filter { it.isLetterOrDigit() || it == '.' || it == ':' }
+        return runCatching {
+            java.net.InetAddress.getByName(ip).hostAddress
+        }.getOrElse {
+            ip.filter { it.isLetterOrDigit() || it == '.' || it == ':' }
+        }
     }
     companion object {
-        private const val BAN_KEY_PREFIX = "waf:ban:ip:"
-        private const val MANUAL_BAN_KEY_PREFIX = "waf:manual_ban:ip:"
-        private const val ACTIVE_RULES = "waf:active_rules"
+        private const val WAF_PREFIX = "waf"
+        private const val BAN_KEY_PREFIX = "$WAF_PREFIX:ban:ip:"
+        private const val MANUAL_BAN_KEY_PREFIX = "$WAF_PREFIX:manual_ban:ip:"
+        private const val ACTIVE_RULES = "$WAF_PREFIX:active_rules"
     }
 }
