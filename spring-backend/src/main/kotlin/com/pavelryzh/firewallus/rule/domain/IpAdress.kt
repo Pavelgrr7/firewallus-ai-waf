@@ -1,4 +1,4 @@
-package main.kotlin.com.pavelryzh.firewallus
+package com.pavelryzh.firewallus.rule.domain
 
 @JvmInline
 value class IpAddress(val value: String) {

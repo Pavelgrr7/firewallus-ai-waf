@@ -1,0 +1,76 @@
+package com.pavelryzh.firewallus.rule.service
+
+import com.pavelryzh.firewallus.rule.event.RuleCacheEvent
+import com.pavelryzh.firewallus.rule.api.CreateRuleDto
+import com.pavelryzh.firewallus.rule.api.UpdateRuleDto
+import com.pavelryzh.firewallus.rule.api.toEntity
+import com.pavelryzh.firewallus.rule.domain.Rule
+import com.pavelryzh.firewallus.rule.domain.RuleNotFoundException
+import com.pavelryzh.firewallus.rule.port.RuleRepository
+import org.springframework.context.ApplicationEventPublisher
+import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
+
+@Service
+class RuleService(private val ruleRepo: RuleRepository, private val eventPublisher: ApplicationEventPublisher) {
+
+    @Transactional(readOnly = true)
+    fun getAllRules(): List<Rule> {
+        return ruleRepo.findAll()
+    }
+
+    @Transactional
+    fun disableRule(id: Int): Rule {
+        val rule: Rule = ruleRepo.findById(id).orElseThrow { RuleNotFoundException(id) }
+        rule.isActive = false
+        publishSavedEvent(rule)
+        return rule
+    }
+    @Transactional(readOnly = true)
+    fun getRuleById(id: Int): Rule {
+        return ruleRepo.findById(id).orElseThrow { RuleNotFoundException(id) }
+    }
+    @Transactional
+    fun createRule(ruleDto: CreateRuleDto): Rule {
+        val rule = ruleRepo.save(ruleDto.toEntity())
+        publishSavedEvent(rule)
+        return rule
+    }
+    @Transactional
+    fun updateRule(id: Int, updateDto: UpdateRuleDto): Rule {
+        val rule = ruleRepo.findById(id).orElseThrow { RuleNotFoundException(id) }
+        updateDto.name?.let { rule.name = it }
+        updateDto.ruleType?.let { rule.ruleType = it }
+        updateDto.isActive?.let { rule.isActive = it }
+        publishSavedEvent(rule)
+        return rule
+    }
+    @Transactional
+    fun deleteRule(id: Int) {
+        ruleRepo.deleteById(id)
+        publishDeletedEvent(id)
+    }
+    @Transactional
+    fun enableRule(id: Int): Rule {
+        val rule: Rule = ruleRepo.findById(id).orElseThrow { RuleNotFoundException(id) }
+        rule.isActive = true
+        publishSavedEvent(rule)
+
+        return rule
+
+    }
+
+    private fun publishSavedEvent(rule: Rule) {
+        val event = RuleCacheEvent.Saved(
+            ruleId = rule.id!!,
+            name = rule.name,
+            ruleType = rule.ruleType,
+            isActive = rule.isActive
+        )
+        eventPublisher.publishEvent(event)
+    }
+
+    private fun publishDeletedEvent(id: Int) {
+        eventPublisher.publishEvent(RuleCacheEvent.Deleted(id))
+    }
+}

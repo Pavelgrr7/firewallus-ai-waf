@@ -1,7 +1,7 @@
-package main.kotlin.com.pavelryzh.firewallus.rule.api
+package com.pavelryzh.firewallus.rule.api
 
 import jakarta.validation.Valid
-import main.kotlin.com.pavelryzh.firewallus.rule.RuleService
+import com.pavelryzh.firewallus.rule.service.RuleService
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
