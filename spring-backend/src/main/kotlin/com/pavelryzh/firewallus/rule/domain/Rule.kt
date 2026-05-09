@@ -22,7 +22,10 @@ class Rule(
     var ruleType: RuleType,
 
     @Column(name = "is_active", nullable = false)
-    var isActive: Boolean = true
+    var isActive: Boolean = true,
+
+    @Column(name = "condition_value", nullable= true)
+    var conditionValue: String? = null,
 ) {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

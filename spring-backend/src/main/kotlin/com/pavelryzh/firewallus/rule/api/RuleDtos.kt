@@ -13,7 +13,7 @@ data class CreateRuleDto(
 
     val ruleType: RuleType,
 
-    @field:NotBlank(message = "Условие не может быть пустым")
+    @field:Size(max = 255, message = "Условие должно превышать 255 символов")
     val conditionValue: String,
 
     val isActive: Boolean = false
@@ -23,21 +23,23 @@ data class RuleResponseDto(
     val id: Int,
     val name: String,
     val ruleType: String,
-    val isActive: Boolean
+    val isActive: Boolean,
+    val conditionValue: String? = "",
 )
 
-class UpdateRuleDto(
+data class UpdateRuleDto(
     val name: String?,
     val ruleType: RuleType?,
-    val isActive: Boolean?
-)
+    val conditionValue: String?
+    )
 
 fun Rule.toDto(): RuleResponseDto {
     return RuleResponseDto(
         id = this.id!!,
         name = this.name,
         ruleType = this.ruleType.name,
-        isActive = this.isActive
+        isActive = this.isActive,
+        conditionValue = this.conditionValue
     )
 }
 
@@ -45,6 +47,7 @@ fun CreateRuleDto.toEntity(): Rule {
     return Rule(
         name = this.name,
         ruleType = this.ruleType,
-        isActive = this.isActive
+        isActive = this.isActive,
+        conditionValue = this.conditionValue
     )
 }

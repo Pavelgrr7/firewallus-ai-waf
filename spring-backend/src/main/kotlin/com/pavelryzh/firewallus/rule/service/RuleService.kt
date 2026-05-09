@@ -7,6 +7,8 @@ import com.pavelryzh.firewallus.rule.api.toEntity
 import com.pavelryzh.firewallus.rule.domain.Rule
 import com.pavelryzh.firewallus.rule.domain.RuleNotFoundException
 import com.pavelryzh.firewallus.rule.port.RuleRepository
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -15,8 +17,8 @@ import org.springframework.transaction.annotation.Transactional
 class RuleService(private val ruleRepo: RuleRepository, private val eventPublisher: ApplicationEventPublisher) {
 
     @Transactional(readOnly = true)
-    fun getAllRules(): List<Rule> {
-        return ruleRepo.findAll()
+    fun getAllRules(pageable: Pageable): Page<Rule> {
+        return ruleRepo.findAll(pageable)
     }
 
     @Transactional
@@ -41,7 +43,7 @@ class RuleService(private val ruleRepo: RuleRepository, private val eventPublish
         val rule = ruleRepo.findById(id).orElseThrow { RuleNotFoundException(id) }
         updateDto.name?.let { rule.name = it }
         updateDto.ruleType?.let { rule.ruleType = it }
-        updateDto.isActive?.let { rule.isActive = it }
+        updateDto.conditionValue?.let { rule.conditionValue = it }
         publishSavedEvent(rule)
         return rule
     }
