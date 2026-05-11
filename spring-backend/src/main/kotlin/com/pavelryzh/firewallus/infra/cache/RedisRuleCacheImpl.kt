@@ -11,6 +11,7 @@ import java.time.Duration
 @Component
 class RedisRuleCacheAdapter(
     private val redisTemplate: StringRedisTemplate,
+    // Импорт правильный, т.к. используется spring boot 4
     private val objectMapper: ObjectMapper
 ) : RuleCache {
 

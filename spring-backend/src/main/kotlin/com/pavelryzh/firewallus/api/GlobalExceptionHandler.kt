@@ -16,7 +16,7 @@ data class ErrorResponse(
 
 @RestControllerAdvice
 class GlobalExceptionHandler {
-    val logger: Logger = LoggerFactory.getLogger(GlobalExceptionHandler::class.java)
+    private val logger: Logger = LoggerFactory.getLogger(GlobalExceptionHandler::class.java)
 
     @ExceptionHandler(RuleNotFoundException::class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
