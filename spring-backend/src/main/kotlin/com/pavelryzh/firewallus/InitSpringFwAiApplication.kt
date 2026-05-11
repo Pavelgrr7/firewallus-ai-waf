@@ -1,4 +1,4 @@
-package main.kotlin.com.pavelryzh.firewallus
+package com.pavelryzh.firewallus
 
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication

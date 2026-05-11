@@ -1,4 +1,4 @@
-CREATE TYPE RULETYPE AS ENUM ('block_default', 'pass', 'perm_block');
+CREATE TYPE RULETYPE AS ENUM ('BLOCK_DEFAULT', 'PASS', 'PERM_BLOCK');
 CREATE TYPE ACTIONTYPE AS ENUM ('block', 'unblock', 'create_rule');
 CREATE TYPE INCIDENTTYPE AS ENUM ('sql_injection', 'slow_attack', 'bruteforce');
 
