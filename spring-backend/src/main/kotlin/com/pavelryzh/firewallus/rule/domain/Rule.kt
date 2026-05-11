@@ -22,7 +22,7 @@ class Rule(
     var ruleType: RuleType,
 
     @Column(name = "is_active", nullable = false)
-    var isActive: Boolean = true,
+    var isActive: Boolean = false,
 
     @Column(name = "condition_value", nullable= true)
     var conditionValue: String? = null,

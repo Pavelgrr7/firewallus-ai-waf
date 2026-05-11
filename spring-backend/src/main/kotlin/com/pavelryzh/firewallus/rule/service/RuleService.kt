@@ -49,6 +49,7 @@ class RuleService(private val ruleRepo: RuleRepository, private val eventPublish
     }
     @Transactional
     fun deleteRule(id: Int) {
+        if (!ruleRepo.existsById(id)) throw RuleNotFoundException(id)
         ruleRepo.deleteById(id)
         publishDeletedEvent(id)
     }
