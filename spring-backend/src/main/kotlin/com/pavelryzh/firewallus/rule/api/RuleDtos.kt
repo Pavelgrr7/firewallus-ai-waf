@@ -13,7 +13,7 @@ data class CreateRuleDto(
 
     val ruleType: RuleType,
 
-    @field:Size(max = 255, message = "Условие должно превышать 255 символов")
+    @field:Size(max = 255, message = "Условие не должно превышать 255 символов")
     val conditionValue: String,
 
     val isActive: Boolean = false
@@ -24,7 +24,7 @@ data class RuleResponseDto(
     val name: String,
     val ruleType: String,
     val isActive: Boolean,
-    val conditionValue: String? = "",
+    val conditionValue: String? = null,
 )
 
 data class UpdateRuleDto(
