@@ -15,7 +15,7 @@ class JwtTokenService(
     private val secret: String
 ) {
     private val jwtExpirationMs = 86400000L
-    val key: SecretKey = Keys.hmacShaKeyFor(secret.toByteArray())
+    private val key: SecretKey = Keys.hmacShaKeyFor(secret.toByteArray())
 
     fun generateToken(admin: Admin): String {
         val now = Date()
