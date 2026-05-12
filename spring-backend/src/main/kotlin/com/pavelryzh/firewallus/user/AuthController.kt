@@ -15,7 +15,7 @@ class AuthController(
 
     @PostMapping("/login")
     fun login(@Valid @RequestBody loginDto: LoginDto): TokenResponseDto {
-        val token = authService.authenticate(loginDto.username, loginDto.password)
+        val token = authService.authenticate(loginDto)
         return TokenResponseDto(token)
     }
 }
