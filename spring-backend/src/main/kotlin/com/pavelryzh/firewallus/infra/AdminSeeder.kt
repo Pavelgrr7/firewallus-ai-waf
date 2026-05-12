@@ -24,14 +24,12 @@ class AdminSeeder(
         if (adminRepository.count() == 0L) {
             logger.info("База данных админов пуста. Создаем дефолтного администратора: $defaultUsername")
 
-            val defaultAdmin = passwordEncoder.encode(defaultPassword)?.let {
-                Admin(
-                    username = defaultUsername,
-                    passwordHash = it
-                )
-            }
+            val defaultAdmin = Admin(
+                username = defaultUsername,
+                passwordHash = passwordEncoder.encode(defaultPassword)!!
+            )
 
-            adminRepository.save(defaultAdmin!!)
+            adminRepository.save(defaultAdmin)
             logger.info("Дефолтный администратор успешно создан.")
         } else {
             logger.debug("Администраторы уже существуют, Seeding пропущен.")

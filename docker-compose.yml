@@ -6,6 +6,7 @@ services:
       - 'POSTGRES_PASSWORD=${POSTGRES_PASSWORD}'
       - 'DEFAULT_ADMIN_USERNAME=${DEFAULT_ADMIN_USERNAME}'
       - 'DEFAULT_ADMIN_PASSWORD=${DEFAULT_ADMIN_PASSWORD}'
+      - 'JWT_SECRET=${JWT_SECRET}'
     depends_on:
       redis:
         condition: service_started
