@@ -1,7 +1,5 @@
-package main.kotlin.com.pavelryzh.firewallus.user
+package com.pavelryzh.firewallus.user
 
-import com.pavelryzh.firewallus.user.LoginDto
-import com.pavelryzh.firewallus.user.TokenResponseDto
 import com.pavelryzh.firewallus.user.service.AuthService
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.bind.annotation.*
