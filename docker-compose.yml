@@ -4,6 +4,8 @@ services:
     environment:
       - 'POSTGRES_USER=${POSTGRES_USER}'
       - 'POSTGRES_PASSWORD=${POSTGRES_PASSWORD}'
+      - 'DEFAULT_ADMIN_USERNAME=${DEFAULT_ADMIN_USERNAME}'
+      - 'DEFAULT_ADMIN_PASSWORD=${DEFAULT_ADMIN_PASSWORD}'
     depends_on:
       redis:
         condition: service_started
