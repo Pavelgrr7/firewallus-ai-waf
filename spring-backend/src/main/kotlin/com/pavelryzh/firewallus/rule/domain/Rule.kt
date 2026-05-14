@@ -20,6 +20,7 @@ class Rule(
     var name: String,
 
     @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     @Column(name = "action", nullable = false)
     var action: Action,
 

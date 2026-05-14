@@ -5,8 +5,8 @@ enum class Target { IP, URI, HEADER, METHOD }
 enum class Operator { EQUALS, CONTAINS, REGEX }
 
 data class Condition(
-    val target: Target,
-    val targetKey: String? = null, // Заполняется только если target == HEADER
-    val operator: Operator,
-    val value: String
+    val target: Target = Target.IP,
+    val targetKey: String? = null,
+    val operator: Operator = Operator.EQUALS,
+    val value: String = ""
 )
