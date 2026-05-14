@@ -68,13 +68,15 @@ class TrafficService(
 
         val matchedRule = ruleEngine.evaluate(call, activeRules)
 
+        val trafficLog = extractTrafficLog(call)
+
         if (matchedRule != null) {
             val incident = IncidentEventDto(
                 incidentType = matchedRule.name,
                 attackerIp = ip,
                 targetUri = call.request.uri,
                 actionTaken = matchedRule.action.name,
-                headersDump = extractTrafficLog(call).headers
+                headersDump = trafficLog.headers
             )
             serviceScope.launch { kafkaProducer.send(TOPIC_INCIDENT, incident) }
 
@@ -97,14 +99,14 @@ class TrafficService(
         serviceScope.launch {
             kafkaProducer.send(
                 topic = TOPIC_TRAFFIC,
-                extractTrafficLog(call),
+                trafficLog,
 
             )
         }
         proxyToBackend(call)
     }
 
-    suspend fun proxyToBackend(call: ApplicationCall) {
+    private suspend fun proxyToBackend(call: ApplicationCall) {
         // todo
         // делаем запрос к реальному микросервису
         // и возвращаем его ответ в наш call.
@@ -123,7 +125,7 @@ class TrafficService(
         }
     }
     companion object {
-        val TOPIC_TRAFFIC = "traffic-logs"
-        val TOPIC_INCIDENT = "incidents"
+        const val TOPIC_TRAFFIC = "traffic-logs"
+        const val TOPIC_INCIDENT = "incidents"
     }
 }
