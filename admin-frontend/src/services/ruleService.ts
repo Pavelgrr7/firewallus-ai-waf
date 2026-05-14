@@ -21,7 +21,7 @@ export interface Condition {
 export interface RuleResponseDto {
   id: number;
   name: string;
-  isActive: boolean;
+  is_active: boolean;
   action: Action;
   conditions: Condition[];
 }
@@ -30,7 +30,7 @@ export interface CreateRuleDto {
   name: string;
   action: Action;
   conditions: Condition[];
-  isActive?: boolean;
+  is_active: boolean;
 }
 
 export interface UpdateRuleDto {

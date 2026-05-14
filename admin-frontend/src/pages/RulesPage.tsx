@@ -174,7 +174,7 @@ function RuleModal({ rule, onClose, onSaved }: ModalProps) {
   const [conditions, setConditions] = useState<Condition[]>(
     rule?.conditions?.length ? rule.conditions : [{ ...EMPTY_CONDITION }]
   );
-  const [isActive, setIsActive] = useState(rule?.isActive ?? true);
+  const [is_active, setIsActive] = useState(rule?.is_active ?? true);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -203,7 +203,7 @@ function RuleModal({ rule, onClose, onSaved }: ModalProps) {
         const dto: UpdateRuleDto = { name: name.trim(), action, conditions };
         saved = await updateRule(rule!.id, dto);
       } else {
-        const dto: CreateRuleDto = { name: name.trim(), action, conditions, isActive };
+        const dto: CreateRuleDto = { name: name.trim(), action, conditions, is_active };
         saved = await createRule(dto);
       }
       onSaved(saved);
@@ -262,16 +262,16 @@ function RuleModal({ rule, onClose, onSaved }: ModalProps) {
                 <ConditionRow key={i} cond={c} idx={i} onChange={updateCondition} onRemove={removeCondition} canRemove={conditions.length > 1} />
               ))}
             </div>
-            {errors.conditions && <p className="text-xs text-accent-rose mt-1 flex items-center gap-1"><AlertTriangle size={12}/>{errors.conditions}</p>}
+            {errors.conditions && <p className="text-xs text-accent-rose mt-1 flex items-center gap-1"><AlertTriangle size={12} />{errors.conditions}</p>}
           </div>
           {/* Active toggle (create only) */}
           {!isEdit && (
             <div className="flex items-center justify-between py-1">
               <span className="text-sm font-medium text-cyber-200">Enable immediately</span>
-              <Toggle checked={isActive} onChange={() => setIsActive(v => !v)} />
+              <Toggle checked={is_active} onChange={() => setIsActive(v => !v)} />
             </div>
           )}
-          {errors.submit && <p className="text-xs text-accent-rose flex items-center gap-1"><AlertTriangle size={12}/>{errors.submit}</p>}
+          {errors.submit && <p className="text-xs text-accent-rose flex items-center gap-1"><AlertTriangle size={12} />{errors.submit}</p>}
           <div className="flex justify-end gap-3 pt-2">
             <Button type="button" variant="ghost" size="sm" onClick={onClose} disabled={loading}>Cancel</Button>
             <Button type="submit" variant="primary" size="sm" isLoading={loading}>{isEdit ? 'Save Changes' : 'Create Rule'}</Button>
@@ -389,9 +389,9 @@ const RulesPage: React.FC = () => {
   const handleToggleActive = async (rule: RuleResponseDto) => {
     setToggling((prev) => new Set(prev).add(rule.id));
     try {
-      const updated = rule.isActive ? await disableRule(rule.id) : await enableRule(rule.id);
+      const updated = rule.is_active ? await disableRule(rule.id) : await enableRule(rule.id);
       setRules((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
-      showToast(`Rule "${updated.name}" ${updated.isActive ? 'enabled' : 'disabled'}.`, 'success');
+      showToast(`Rule "${updated.name}" ${updated.is_active ? 'enabled' : 'disabled'}.`, 'success');
     } catch {
       showToast('Failed to update rule status.', 'error');
     } finally {
@@ -523,7 +523,7 @@ const RulesPage: React.FC = () => {
                       <td className="px-5 py-4">
                         <div className="flex items-center gap-2.5">
                           <div className={`w-1.5 h-6 rounded-full shrink-0 transition-colors
-                            ${rule.isActive ? 'bg-accent-emerald' : 'bg-cyber-500'}`}
+                            ${rule.is_active ? 'bg-accent-emerald' : 'bg-cyber-500'}`}
                           />
                           <span className="font-medium text-white">{rule.name}</span>
                         </div>
@@ -555,13 +555,13 @@ const RulesPage: React.FC = () => {
                       <td className="px-5 py-4 text-center">
                         <div className="flex items-center justify-center gap-2">
                           <Toggle
-                            checked={rule.isActive}
+                            checked={rule.is_active}
                             onChange={() => handleToggleActive(rule)}
                             disabled={toggling.has(rule.id)}
                           />
                           {toggling.has(rule.id) ? (
                             <Loader2 size={12} className="animate-spin text-cyber-300" />
-                          ) : rule.isActive ? (
+                          ) : rule.is_active ? (
                             <CheckCircle2 size={13} className="text-accent-emerald" />
                           ) : (
                             <XCircle size={13} className="text-cyber-400" />
