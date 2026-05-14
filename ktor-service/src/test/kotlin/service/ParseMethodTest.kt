@@ -1,5 +1,7 @@
 package com.pavelryzh.service
 
+import com.pavelryzh.service.dto.HttpMethod
+import com.pavelryzh.service.dto.parseMethod
 import org.junit.Test
 import kotlin.test.assertEquals
 

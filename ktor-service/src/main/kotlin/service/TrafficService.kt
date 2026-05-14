@@ -1,25 +1,33 @@
 package com.pavelryzh.service
 
+import com.pavelryzh.core.WafRuleEngine
 import com.pavelryzh.kafka.KafkaTrafficProducer
+import com.pavelryzh.model.Action
+import com.pavelryzh.model.WafRule
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import com.pavelryzh.plugins.logger
 import com.pavelryzh.routes.extractTrafficLog
+import com.pavelryzh.service.dto.IncidentEventDto
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.plugins.origin
+import io.ktor.server.request.uri
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondText
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.cancelChildren
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeoutOrNull
 
 class TrafficService(
     private val kafkaProducer: KafkaTrafficProducer,
     private val redisWafClient: RedisWafClient,
+    private val ruleEngine: WafRuleEngine
     ) : AutoCloseable {
 
     private val logger = logger()
@@ -31,6 +39,19 @@ class TrafficService(
 
     private val serviceScope = CoroutineScope(scopeJob + Dispatchers.IO + exceptionHandler)
 
+    @Volatile
+    private var activeRules: List<WafRule> = emptyList()
+
+    init {
+        // Корутина раз в 10 секунд фетчит правила из Redis
+        serviceScope.launch {
+            while (isActive) {
+                activeRules = runCatching { redisWafClient.getActiveRules() }
+                    .getOrDefault(activeRules) // Redis упал -> старые правила
+                delay(10_000)
+            }
+        }
+    }
 
     suspend fun handleRequest(call: ApplicationCall) {
         val ip = call.request.origin.remoteHost
@@ -45,17 +66,43 @@ class TrafficService(
             return
         }
 
-        // todo статические правила (пока что в redis они всё равно никак не попадают
-        // val rules = redis.getActiveRules()
-        // if (violatesRules(call, rules)) { ... return }
+        val matchedRule = ruleEngine.evaluate(call, activeRules)
 
         val trafficLog = extractTrafficLog(call)
-        // корутина не блокирует основной поток запроса
-        serviceScope.launch {
-            kafkaProducer.send(trafficLog)
-        }
 
-        // Проксирование трафика на настоящий бэкенд (перед которым и стоит WAF)
+        if (matchedRule != null) {
+            val incident = IncidentEventDto(
+                incidentType = matchedRule.name,
+                attackerIp = ip,
+                targetUri = call.request.uri,
+                actionTaken = matchedRule.action.name,
+                headersDump = trafficLog.headers
+            )
+            serviceScope.launch { kafkaProducer.send(TOPIC_INCIDENT, incident) }
+
+            // Выполняем действие правила
+            when (matchedRule.action) {
+                Action.BLOCK -> {
+                    call.respond(HttpStatusCode.Forbidden, "WAF Blocked Request")
+                    return
+                }
+                Action.LOG -> {
+                    logger.info("Rule ${matchedRule.name} matched in LOG mode for IP $ip")
+                }
+                Action.ALLOW -> {
+                    logger.info("Rule ${matchedRule.name} matched in ALLOW mode for IP $ip")
+                    proxyToBackend(call)
+                    return
+                }
+            }
+        }
+        serviceScope.launch {
+            kafkaProducer.send(
+                topic = TOPIC_TRAFFIC,
+                trafficLog,
+
+            )
+        }
         proxyToBackend(call)
     }
 
@@ -77,5 +124,8 @@ class TrafficService(
             }
         }
     }
-
+    companion object {
+        const val TOPIC_TRAFFIC = "traffic-logs"
+        const val TOPIC_INCIDENT = "incidents"
+    }
 }

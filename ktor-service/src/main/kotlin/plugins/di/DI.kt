@@ -1,5 +1,6 @@
 package com.pavelryzh.plugins.di
 
+import com.pavelryzh.core.WafRuleEngine
 import com.pavelryzh.kafka.KafkaTrafficProducer
 import com.pavelryzh.service.RedisWafClient
 import com.pavelryzh.service.TrafficService
@@ -18,13 +19,14 @@ fun Application.configureDI() {
         ?: "redis://redis:6379"
 
     val bootstrapServers = environment.config
-        .propertyOrNull("ktor.kafka.common.bootstrap.servers")?.getString()
+        .propertyOrNull("ktor.kafka.bootstrapServers")?.getString()
         ?: "kafka:29092"
 
     val appModule = module {
+        single { WafRuleEngine() } onCloseWith lifecycleLogger
         single { RedisWafClient(redisUri) } onCloseWith lifecycleLogger
         single { KafkaTrafficProducer(bootstrapServers) } onCloseWith lifecycleLogger
-        single { TrafficService(get(), get()) } onCloseWith lifecycleLogger
+        single { TrafficService(get(), get(), get()) } onCloseWith lifecycleLogger
     }
 
     install(Koin) {

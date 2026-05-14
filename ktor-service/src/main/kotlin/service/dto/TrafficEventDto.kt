@@ -1,9 +1,14 @@
-package com.pavelryzh.service
+package com.pavelryzh.service.dto
 
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class TrafficEventDto(val ip: String, val method: HttpMethod, val uri: String)
+data class TrafficEventDto(
+    val ip: String,
+    val method: String,
+    val uri: String,
+    val headers: Map<String, String>
+) : KafkaEvent
 
 enum class HttpMethod {
     GET, POST, PUT, PATCH, DELETE, OPTIONS, UNKNOWN, HEAD, TRACE, CONNECT
