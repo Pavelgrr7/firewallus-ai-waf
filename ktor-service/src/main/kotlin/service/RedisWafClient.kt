@@ -1,9 +1,14 @@
 package com.pavelryzh.service
 
+import com.pavelryzh.model.WafRule
+import com.pavelryzh.plugins.logger
 import io.lettuce.core.RedisClient
 import io.lettuce.core.api.StatefulRedisConnection
 import io.lettuce.core.api.async.RedisAsyncCommands
 import kotlinx.coroutines.future.await
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonNamingStrategy
 import java.util.concurrent.atomic.AtomicBoolean
 
 class RedisWafClient(redisUri: String) : AutoCloseable {
@@ -21,6 +26,16 @@ class RedisWafClient(redisUri: String) : AutoCloseable {
     }
 
     private val isClosed = AtomicBoolean(false)
+
+    // автоматическая конвертация camelCase <-> snake_case
+    @OptIn(ExperimentalSerializationApi::class)
+    private val json = Json {
+        encodeDefaults = true
+        ignoreUnknownKeys = true
+        namingStrategy = JsonNamingStrategy.SnakeCase
+    }
+
+    private val logger = logger()
 
     suspend fun isIpBanned(ip: String): Boolean {
         if (isClosed.get()) throw IllegalStateException("RedisWafClient is closed")
@@ -42,8 +57,18 @@ class RedisWafClient(redisUri: String) : AutoCloseable {
         )
     }
 
-    suspend fun getActiveRules(): String? {
-        return asyncApi.get(ACTIVE_RULES).await()
+    suspend fun getActiveRules(): List<WafRule> {
+        // HGETALL: Map<String, String>
+        val rulesMap = asyncApi.hgetall(ACTIVE_RULES).await()
+
+        return rulesMap.values.mapNotNull { jsonString ->
+            logger.debug("Receiving data from redis: $jsonString")
+            runCatching {
+                json.decodeFromString<WafRule>(jsonString)
+            }.onFailure { e ->
+                logger.error("Failed to parse WafRule from Redis: ${e.message}")
+            }.getOrNull()
+        }
     }
 
     override fun close() {

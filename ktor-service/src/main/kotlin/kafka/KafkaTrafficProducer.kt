@@ -1,23 +1,36 @@
 package com.pavelryzh.kafka
 
 import com.pavelryzh.plugins.logger
-import com.pavelryzh.service.TrafficEventDto
+import com.pavelryzh.service.dto.KafkaEvent
 import kotlinx.serialization.json.Json
 import org.apache.kafka.clients.producer.KafkaProducer
+import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.clients.producer.ProducerRecord
+import org.apache.kafka.common.serialization.StringSerializer
 import java.util.Properties
 
-class KafkaTrafficProducer(bootstrapServers: String): AutoCloseable {
+class KafkaTrafficProducer(
+    bootstrapServers: String,
+): AutoCloseable {
 
-    private val producer: KafkaProducer<String, String>
-    private val logger = logger()
+    @PublishedApi
+    internal val producer: KafkaProducer<String, String>
+
+    @PublishedApi
+    internal val logger = logger()
+
+    @PublishedApi
+    internal val json = Json {
+        encodeDefaults = true
+        ignoreUnknownKeys = true
+    }
 
     init {
         val props = Properties().apply {
             put("bootstrap.servers", bootstrapServers)
             put("client.id", "ktor-gateway-producer")
-            put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer")
-            put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer")
+            put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer::class.java.name)
+            put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer::class.java.name)
 
             // Out-of-Band
             put("acks", "0")
@@ -26,22 +39,24 @@ class KafkaTrafficProducer(bootstrapServers: String): AutoCloseable {
         producer = KafkaProducer(props)
     }
 
-    fun send(event: TrafficEventDto) {
-        val jsonPayload = Json.encodeToString(event)
-        // На данный момент нет логики отправки тела запроса (либо части тела запроса при привышении лимита)
-        // Сейчас цель - показать рабочий роут и корректную отправку данных в кафку.
-        // Позже отдельным PR будет реализована вся логика сбора и отправки информации о запросах
+    inline fun <reified T : KafkaEvent> send(topic: String, message: T) {
+        val jsonPayload = runCatching {
+            json.encodeToString(message)
+        }.getOrElse {
+            logger.error("Failed to serialize Kafka event: ${it.message}")
+            return
+        }
 
-        // Все запросы с одного IP попадали - одна партиция Kafka
-        val record = ProducerRecord("traffic-logs", event.ip, jsonPayload)
-        // Фоновый поток Kafka I/O
+        val record = ProducerRecord<String, String>(topic, jsonPayload)
+
         producer.send(record) { metadata, exception ->
             if (exception != null) {
-                logger.error("[WAF Shadowing] Failed to send log to Kafka: ${exception.message}")
+                logger.error("Error sending to Kafka topic '$topic': ${exception.message}")
             } else {
-                logger.debug("[WAF Shadowing] Log sent to partition ${metadata.partition()} at offset ${metadata.offset()}")
+                logger.debug("Log sent to partition ${metadata.partition()} at offset ${metadata.offset()}")
             }
         }
+
     }
 
     override fun close() {
