@@ -14,8 +14,8 @@ services:
         condition: service_healthy
       postgres:
         condition: service_healthy
-    # ports:
-    #  - "8080:8080"
+    ports:
+      - "8080:8080"
 
   ktor-service:
     build: './ktor-service'
@@ -60,6 +60,13 @@ services:
     depends_on:
       - ktor-service
 
+  admin-frontend:
+    build: './admin-frontend'
+    container_name: admin-frontend
+    ports:
+      - "3001:80"
+    depends_on:
+      - backend-spring
   kafka:
     image: apache/kafka:latest
     container_name: kafka
