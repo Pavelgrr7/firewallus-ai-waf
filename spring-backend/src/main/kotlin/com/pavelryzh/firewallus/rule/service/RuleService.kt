@@ -42,17 +42,19 @@ class RuleService(private val ruleRepo: RuleRepository, private val eventPublish
     fun updateRule(id: Int, updateDto: UpdateRuleDto): Rule {
         val rule = ruleRepo.findById(id).orElseThrow { RuleNotFoundException(id) }
         updateDto.name?.let { rule.name = it }
-        updateDto.ruleType?.let { rule.ruleType = it }
-        updateDto.conditionValue?.let { rule.conditionValue = it }
+        updateDto.action?.let { rule.action = it }
+        updateDto.conditions?.let { rule.conditions = it }
         publishSavedEvent(rule)
         return rule
     }
+
     @Transactional
     fun deleteRule(id: Int) {
-        if (!ruleRepo.existsById(id)) throw RuleNotFoundException(id)
-        ruleRepo.deleteById(id)
+        val rule = ruleRepo.findById(id).orElseThrow { RuleNotFoundException(id) }
+        ruleRepo.delete(rule)
         publishDeletedEvent(id)
     }
+
     @Transactional
     fun enableRule(id: Int): Rule {
         val rule: Rule = ruleRepo.findById(id).orElseThrow { RuleNotFoundException(id) }
@@ -67,7 +69,8 @@ class RuleService(private val ruleRepo: RuleRepository, private val eventPublish
         val event = RuleCacheEvent.Saved(
             ruleId = rule.id!!,
             name = rule.name,
-            ruleType = rule.ruleType,
+            action = rule.action,
+            conditions = rule.conditions,
             isActive = rule.isActive
         )
         eventPublisher.publishEvent(event)
