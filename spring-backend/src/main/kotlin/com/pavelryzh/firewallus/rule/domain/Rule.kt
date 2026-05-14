@@ -9,6 +9,8 @@ import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.Table
 import org.hibernate.annotations.CreationTimestamp
+import org.hibernate.annotations.JdbcTypeCode
+import org.hibernate.type.SqlTypes
 import java.time.Instant
 
 @Entity
@@ -18,15 +20,16 @@ class Rule(
     var name: String,
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "rule_type", nullable = false)
-    var ruleType: RuleType,
+    @Column(name = "action", nullable = false)
+    var action: Action,
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "conditions", columnDefinition = "jsonb", nullable = false)
+    var conditions: List<Condition>,
 
     @Column(name = "is_active", nullable = false)
     var isActive: Boolean = false,
-
-    @Column(name = "condition_value", nullable= true)
-    var conditionValue: String? = null,
-) {
+    ) {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "rule_id")
