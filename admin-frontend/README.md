@@ -1,73 +1,62 @@
-# React + TypeScript + Vite
+# FirewallUs — Admin Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React + Vite SPA for managing the FirewallUs AI WAF (Web Application Firewall).
 
-Currently, two official plugins are available:
+## Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+| Tool | Role |
+|---|---|
+| React 18 | UI framework |
+| TypeScript | Type safety |
+| Vite | Dev server & bundler |
+| Tailwind CSS | Styling |
+| Axios | HTTP client with JWT interceptor |
+| React Router | Client-side routing |
 
-## React Compiler
+## Development
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+npm run dev        # starts Vite dev server at http://localhost:5173
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+API requests are proxied through Vite to `http://localhost:8080` (Spring backend).
+Make sure the backend container is running before starting the dev server:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+# from project root
+docker compose up -d backend-spring postgres redis kafka
 ```
+
+## Production (Docker)
+
+The frontend is served by nginx inside a Docker container on port 3001:
+
+```bash
+# from project root
+docker compose up -d --build admin-frontend
+```
+
+nginx configuration (`nginx.conf`) handles:
+- SPA fallback (`try_files` → `index.html`)
+- Reverse proxy of `/api/` → `backend-spring:8080`
+- Static asset caching (1 year, immutable)
+- Security headers on all locations (`X-Frame-Options`, `X-Content-Type-Options`, etc.)
+
+## Project Structure
+
+```
+src/
+  components/   # Reusable UI components
+  context/      # React context (AuthContext, etc.)
+  pages/        # Route-level page components
+  routes/       # Route definitions & guards
+  services/     # API service layer (authService, etc.)
+  data/         # Static/mock data
+```
+
+## Authentication
+
+JWT-based. On login the token is stored in `localStorage` and attached to every outgoing
+request via an Axios request interceptor. A 401 response automatically clears the token
+and redirects to `/login`.
