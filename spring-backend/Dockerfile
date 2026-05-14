@@ -5,14 +5,15 @@ WORKDIR /app
 COPY gradlew .
 COPY gradle/ gradle/
 RUN chmod +x gradlew
-RUN ./gradlew --version --no-daemon
+RUN --mount=type=cache,id=spring-gradle,target=/root/.gradle \
+    ./gradlew --version --no-daemon
 
 COPY build.gradle settings.gradle ./
 
 COPY src/ src/
 
 # Результат /root/.gradle на уровне хоста Docker
-RUN --mount=type=cache,target=/root/.gradle \
+RUN --mount=type=cache,id=spring-gradle,target=/root/.gradle \
     ./gradlew bootJar -x test --no-daemon
 
 FROM eclipse-temurin:21-jre-alpine
