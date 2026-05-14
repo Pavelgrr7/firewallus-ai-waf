@@ -3,10 +3,8 @@ package com.pavelryzh.firewallus.rule.api
 import com.pavelryzh.firewallus.rule.domain.Action
 import com.pavelryzh.firewallus.rule.domain.Condition
 import com.pavelryzh.firewallus.rule.domain.Rule
-import com.pavelryzh.firewallus.rule.domain.RuleType
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotEmpty
-import jakarta.validation.constraints.Size
 
 data class CreateRuleDto(
     @field:NotBlank val name: String,
