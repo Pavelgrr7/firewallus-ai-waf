@@ -38,7 +38,7 @@ api.interceptors.response.use(
 
 export default api;
 
-/* ===== Mock Authentication Service ===== */
+/* ===== Auth Types ===== */
 
 export interface LoginCredentials {
   username: string;
@@ -54,24 +54,31 @@ export interface AuthResponse {
 }
 
 /**
- * Mock login — accepts any credentials and returns a fake JWT.
- * In production, this would call a real backend endpoint.
+ * Decodes the payload section of a JWT (base64url) without verifying the signature.
+ * Used to extract `sub` (username) and `role` from the token returned by the backend.
+ */
+const decodeJwtPayload = (token: string): Record<string, unknown> => {
+  try {
+    const payload = token.split('.')[1];
+    // base64url → base64
+    const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
+    return JSON.parse(atob(base64));
+  } catch {
+    return {};
+  }
+};
+
+/**
+ * Authenticates against the Spring backend: POST /api/v1/auth/login
+ * Returns a JWT token along with user info decoded from its payload.
  */
 export const loginUser = async (credentials: LoginCredentials): Promise<AuthResponse> => {
-  // Simulate network latency
-  await new Promise((resolve) => setTimeout(resolve, 800));
+  const response = await api.post<{ token: string }>('/v1/auth/login', credentials);
+  const { token } = response.data;
 
-  // Accept any credentials for demonstration
-  const fakeToken =
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.' +
-    btoa(JSON.stringify({ sub: credentials.username, role: 'admin', iat: Date.now() })) +
-    '.mock-signature';
+  const payload = decodeJwtPayload(token);
+  const username = (payload.sub as string) ?? credentials.username;
+  const role = (payload.role as string) ?? 'ADMIN';
 
-  return {
-    token: fakeToken,
-    user: {
-      username: credentials.username,
-      role: 'admin',
-    },
-  };
+  return { token, user: { username, role } };
 };

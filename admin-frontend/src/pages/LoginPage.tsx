@@ -93,7 +93,7 @@ const LoginPage: React.FC = () => {
 
           {/* Footer Hint */}
           <p className="text-center text-xs text-cyber-500 mt-6">
-            Demo mode — any credentials will work
+            Firewallus WAF &mdash; Admin Panel
           </p>
         </div>
       </div>
