@@ -3,6 +3,7 @@ package com.pavelryzh.service
 import com.pavelryzh.model.WafRule
 import com.pavelryzh.plugins.logger
 import io.lettuce.core.RedisClient
+import io.lettuce.core.ScriptOutputType
 import io.lettuce.core.api.StatefulRedisConnection
 import io.lettuce.core.api.async.RedisAsyncCommands
 import kotlinx.coroutines.future.await
@@ -37,6 +38,64 @@ class RedisWafClient(redisUri: String) : AutoCloseable {
 
     private val logger = logger()
 
+
+    @Volatile
+    private var rateLimitScriptSha: String? = null
+
+    private val rateLimitScript: String by lazy {
+        this::class.java.getResource("/scripts/rate_limit.lua")?.readText()
+            ?: throw IllegalStateException("Файл /scripts/rate_limit.lua не найден в resources!")
+    }
+
+    suspend fun getActiveRules(): List<WafRule> {
+        // HGETALL: Map<String, String>
+        val rulesMap = asyncApi.hgetall(ACTIVE_RULES).await()
+
+        return rulesMap.values.mapNotNull { jsonString ->
+            logger.debug("Receiving data from redis: $jsonString")
+            runCatching {
+                json.decodeFromString<WafRule>(jsonString)
+            }.onFailure { e ->
+                logger.error("Failed to parse WafRule from Redis: ${e.message}")
+            }.getOrNull()
+        }
+    }
+
+    suspend fun isRateLimited(ip: String, limit: Int = 50, windowSeconds: Int = 60): Boolean {
+        if (isClosed.get()) throw IllegalStateException("RedisWafClient is closed")
+
+        val key = "waf:ratelimit:ip:${sanitizeIp(ip)}"
+
+        // первый запуск
+        if (rateLimitScriptSha == null) {
+            rateLimitScriptSha = asyncApi.scriptLoad(rateLimitScript).await()
+        }
+
+        return try {
+            val result = asyncApi.evalsha<Long>(
+                rateLimitScriptSha,
+                ScriptOutputType.INTEGER,
+                arrayOf(key),
+                limit.toString(), windowSeconds.toString()
+            ).await()
+
+            result == 1L
+        } catch (e: Exception) {
+            // Защита от NOSCRIPT error
+            if (e.message?.contains("NOSCRIPT") == true) {
+                rateLimitScriptSha = null
+                val fallbackResult = asyncApi.eval<Long>(
+                    rateLimitScript,
+                    ScriptOutputType.INTEGER,
+                    arrayOf(key),
+                    limit.toString(), windowSeconds.toString()
+                ).await()
+                return fallbackResult == 1L
+            }
+            throw e
+        }
+    }
+
     suspend fun isIpBanned(ip: String): Boolean {
         if (isClosed.get()) throw IllegalStateException("RedisWafClient is closed")
 
@@ -57,27 +116,6 @@ class RedisWafClient(redisUri: String) : AutoCloseable {
         )
     }
 
-    suspend fun getActiveRules(): List<WafRule> {
-        // HGETALL: Map<String, String>
-        val rulesMap = asyncApi.hgetall(ACTIVE_RULES).await()
-
-        return rulesMap.values.mapNotNull { jsonString ->
-            logger.debug("Receiving data from redis: $jsonString")
-            runCatching {
-                json.decodeFromString<WafRule>(jsonString)
-            }.onFailure { e ->
-                logger.error("Failed to parse WafRule from Redis: ${e.message}")
-            }.getOrNull()
-        }
-    }
-
-    override fun close() {
-        if (isClosed.compareAndSet(false, true)) {
-            connection.close()
-            client.shutdown()
-        }
-    }
-
     // НА ДАННОМ ЭТАПЕ НЕ НУЖНА ИДЕАЛЬНАЯ PROD-READY ПРОВЕРКА
     // ДОСТАТОЧНО БАЗОВОГО МЕТОДА, КОТОРЫЙ БУДЕТ ДЕТАЛЬНО ПРОРАБОТАН В БУДУЩЕМ
     private fun sanitizeIp(ip: String): String {
@@ -90,6 +128,14 @@ class RedisWafClient(redisUri: String) : AutoCloseable {
             else -> throw IllegalArgumentException("Invalid IP format: $ip")
         }
     }
+
+    override fun close() {
+        if (isClosed.compareAndSet(false, true)) {
+            connection.close()
+            client.shutdown()
+        }
+    }
+
     companion object {
         private const val WAF_PREFIX = "waf"
         private const val BAN_KEY_PREFIX = "$WAF_PREFIX:ban:ip:"
