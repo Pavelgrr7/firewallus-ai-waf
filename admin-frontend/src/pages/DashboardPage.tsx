@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Activity,
   ShieldOff,
@@ -6,10 +6,12 @@ import {
   Zap,
   TrendingUp,
   TrendingDown,
+  Wifi,
+  WifiOff,
 } from 'lucide-react';
 import {
-  LineChart,
-  Line,
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -21,24 +23,21 @@ import {
   BarChart,
   Bar,
   Legend,
-  RadarChart,
-  PolarGrid,
-  PolarAngleAxis,
-  PolarRadiusAxis,
-  Radar,
 } from 'recharts';
 
 import Header from '../components/layout/Header';
 import Card from '../components/ui/Card';
 import {
-  counterCards,
-  trafficData,
-  attackTypes,
-  blockedIPs,
-  actionDistribution,
-} from '../data/mockData';
+  getIncidents,
+  connectIncidentStream,
+  type IncidentResponseDto,
+} from '../services/incidentService';
+import { getRules } from '../services/ruleService';
 
-/* ===== Helper: format large numbers ===== */
+/* ===================================================================
+   Helper utilities
+=================================================================== */
+
 const formatNumber = (n: number): string =>
   n >= 1_000_000
     ? `${(n / 1_000_000).toFixed(1)}M`
@@ -46,7 +45,73 @@ const formatNumber = (n: number): string =>
     ? `${(n / 1_000).toFixed(n >= 10_000 ? 0 : 1)}K`
     : n.toString();
 
-/* ===== Counter Card Component ===== */
+
+
+/**
+ * Group incidents by local-timezone **minute** bucket (HH:mm).
+ * Using minutes instead of hours gives each recent incident its own X-axis
+ * data point so the area chart draws a proper line rather than collapsing
+ * everything into a single bar.
+ *
+ * `new Date(isoUtcString)` parses as UTC; `.getHours()` / `.getMinutes()`
+ * return values in the browser's local timezone automatically.
+ */
+const buildTimelineData = (
+  incidents: IncidentResponseDto[]
+): { time: string; count: number }[] => {
+  const buckets: Record<string, number> = {};
+
+  for (const inc of incidents) {
+    if (!inc.timestamp) continue;
+    const d = new Date(inc.timestamp);
+    // "HH:mm" in local timezone — one bucket per minute
+    const key =
+      `${String(d.getHours()).padStart(2, '0')}:` +
+      `${String(d.getMinutes()).padStart(2, '0')}`;
+    buckets[key] = (buckets[key] ?? 0) + 1;
+  }
+
+  // Sort chronologically (lexicographic order works for "HH:mm" strings)
+  return Object.entries(buckets)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([time, count]) => ({ time, count }));
+};
+
+/** Count occurrences of a string field */
+const countBy = <K extends string>(
+  incidents: IncidentResponseDto[],
+  field: keyof IncidentResponseDto
+): { name: K; value: number }[] => {
+  const map: Record<string, number> = {};
+  for (const inc of incidents) {
+    const key = String(inc[field] ?? 'Unknown');
+    map[key] = (map[key] ?? 0) + 1;
+  }
+  return Object.entries(map)
+    .sort(([, a], [, b]) => b - a)
+    .map(([name, value]) => ({ name: name as K, value }));
+};
+
+/** Top N entries by count */
+const topN = <T extends { value: number }>(arr: T[], n: number): T[] =>
+  arr.slice(0, n);
+
+/* ===================================================================
+   Chart colour palettes
+=================================================================== */
+
+const PIE_COLORS = ['#f43f5e', '#f59e0b', '#a855f7', '#06b6d4', '#3b82f6', '#10b981'];
+const ACTION_COLOR: Record<string, string> = {
+  BLOCK: '#f43f5e',
+  LOG: '#f59e0b',
+  ALLOW: '#10b981',
+};
+const DEFAULT_COLOR = '#7a92b5';
+
+/* ===================================================================
+   Sub-components
+=================================================================== */
+
 interface StatCardProps {
   title: string;
   value: string;
@@ -55,6 +120,7 @@ interface StatCardProps {
   trend?: { value: string; positive: boolean };
   accentColor: string;
   delay: number;
+  loading?: boolean;
 }
 
 const StatCard: React.FC<StatCardProps> = ({
@@ -65,6 +131,7 @@ const StatCard: React.FC<StatCardProps> = ({
   trend,
   accentColor,
   delay,
+  loading,
 }) => (
   <Card className="animate-slide-up" glow>
     <div style={{ animationDelay: `${delay}ms` }} className="animate-slide-up">
@@ -88,14 +155,20 @@ const StatCard: React.FC<StatCardProps> = ({
           </span>
         )}
       </div>
-      <p className="text-2xl font-bold text-white tracking-tight">{value}</p>
+      <p className="text-2xl font-bold text-white tracking-tight">
+        {loading ? (
+          <span className="inline-block w-20 h-7 rounded bg-cyber-700/50 animate-pulse" />
+        ) : (
+          value
+        )}
+      </p>
       <p className="text-sm text-cyber-300 mt-1">{title}</p>
       {subtitle && <p className="text-xs text-cyber-500 mt-0.5">{subtitle}</p>}
     </div>
   </Card>
 );
 
-/* ===== Custom Chart Tooltip ===== */
+/* ===== Custom Tooltip ===== */
 const ChartTooltip = ({
   active,
   payload,
@@ -118,100 +191,225 @@ const ChartTooltip = ({
   );
 };
 
-/* ===== Dashboard Page ===== */
+/* ===== SSE Status Badge ===== */
+const StreamBadge: React.FC<{ connected: boolean }> = ({ connected }) => (
+  <span
+    className={`flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${
+      connected
+        ? 'bg-emerald-500/10 text-emerald-400'
+        : 'bg-rose-500/10 text-rose-400'
+    }`}
+  >
+    {connected ? <Wifi size={12} /> : <WifiOff size={12} />}
+    {connected ? 'Live' : 'Reconnecting…'}
+  </span>
+);
+
+/* ===================================================================
+   Dashboard Page
+=================================================================== */
+
 const DashboardPage: React.FC = () => {
+  const [incidents, setIncidents] = useState<IncidentResponseDto[]>([]);
+  const [activeRules, setActiveRules] = useState<number>(0);
+  const [loading, setLoading] = useState(true);
+  const [sseConnected, setSseConnected] = useState(false);
+
+  // Keep a stable ref to the AbortController so cleanup always cancels the
+  // current connection even if React renders multiple times before unmount.
+  const sseAbortRef = useRef<AbortController | null>(null);
+
+  /* ── Initial data fetch ── */
+  useEffect(() => {
+    let cancelled = false;
+
+    const load = async () => {
+      try {
+        const [incPage, rulesPage] = await Promise.all([
+          getIncidents(0, 200),
+          getRules(0, 200),
+        ]);
+
+        if (cancelled) return;
+
+        setIncidents(incPage.content);
+        setActiveRules(rulesPage.content.filter((r) => r.is_active).length);
+      } catch (err) {
+        console.error('[Dashboard] initial fetch failed', err);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  /* ── SSE stream ── */
+  useEffect(() => {
+    // Open the stream.
+    const ctrl = connectIncidentStream({
+      onIncident: (newIncident) => {
+        setSseConnected(true);
+        // Prepend the new incident so the dashboard updates in real-time.
+        setIncidents((prev) => [newIncident, ...prev]);
+      },
+      onError: () => {
+        setSseConnected(false);
+      },
+    });
+
+    sseAbortRef.current = ctrl;
+
+    // Mark as connected optimistically; errors will flip it back.
+    setSseConnected(true);
+
+    /**
+     * CLEANUP — called when the component unmounts (or if the effect re-runs).
+     * Aborting the controller closes the underlying fetch/SSE connection and
+     * prevents memory leaks / phantom state updates after unmount.
+     */
+    return () => {
+      ctrl.abort();
+      sseAbortRef.current = null;
+      setSseConnected(false);
+    };
+  }, []); // Empty deps → runs once on mount, cleans up on unmount.
+
+  /* ── Derived chart data ── */
+  const timelineData = buildTimelineData(incidents);
+
+  // Bug 1 fix: group by snake_case field incident_type
+  const attackTypeData = topN(
+    countBy(incidents, 'incident_type').map((d, i) => ({
+      ...d,
+      color: PIE_COLORS[i % PIE_COLORS.length],
+    })),
+    6
+  );
+
+  // Bug 2 fix: group by snake_case field attacker_ip
+  const blockedIPsData = countBy(incidents, 'attacker_ip')
+    .map((d) => ({ ip: d.name, count: d.value }))
+    .slice(0, 7);
+
+  // Bug 2 fix: group by snake_case field action_taken
+  const actionData = countBy(incidents, 'action_taken').map((d) => ({
+    action: d.name,
+    count: d.value,
+    fill: ACTION_COLOR[d.name] ?? DEFAULT_COLOR,
+  }));
+
+  // Bug 3 fix: guard against undefined — only count as ML when field is
+  // explicitly a number (not null and not undefined/missing)
+  const mlCount = incidents.filter(
+    (i) => i.confidence_score !== null && i.confidence_score !== undefined
+  ).length;
+  const staticCount = incidents.filter(
+    (i) => i.confidence_score === null || i.confidence_score === undefined
+  ).length;
+
+  /* ── Render ── */
   return (
     <div className="min-h-screen">
       <Header title="Dashboard" />
 
       <div className="p-8 space-y-8">
-        {/* Section A: Counter Cards */}
+        {/* ── Section A: Counter Cards ── */}
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
           <StatCard
-            title="Total Traffic"
-            value={formatNumber(counterCards.totalTraffic)}
-            subtitle="HTTP requests analyzed"
-            icon={<Activity size={22} />}
-            trend={{ value: '+12.5%', positive: true }}
-            accentColor="#3b82f6"
-            delay={0}
-          />
-          <StatCard
             title="Blocked Requests"
-            value={formatNumber(counterCards.blockedRequests)}
-            subtitle="Attacks prevented"
+            value={formatNumber(incidents.length)}
+            subtitle="Last 200 incidents loaded"
             icon={<ShieldOff size={22} />}
-            trend={{ value: '+3.2%', positive: false }}
             accentColor="#f43f5e"
-            delay={100}
+            delay={0}
+            loading={loading}
           />
           <StatCard
             title="Active Rules"
-            value={counterCards.activeRules.toString()}
+            value={activeRules.toString()}
             subtitle="Currently enforced"
             icon={<BookOpen size={22} />}
-            trend={{ value: '+2', positive: true }}
             accentColor="#a855f7"
+            delay={100}
+            loading={loading}
+          />
+          <StatCard
+            title="ML Model Detections"
+            value={formatNumber(mlCount)}
+            subtitle={`Static rules: ${formatNumber(staticCount)}`}
+            icon={<Activity size={22} />}
+            accentColor="#3b82f6"
             delay={200}
+            loading={loading}
           />
           <StatCard
             title="Redis Rate (Lua)"
-            value={`${counterCards.redisRate} req/s`}
-            subtitle="Current throughput"
+            value="—"
+            subtitle="Metric not yet available"
             icon={<Zap size={22} />}
-            trend={{ value: '+8.1%', positive: true }}
             accentColor="#06b6d4"
             delay={300}
           />
         </div>
 
-        {/* Section B: Charts */}
+        {/* ── Section B: Charts ── */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* 1. Traffic vs Blocks — Line Chart */}
+
+          {/* 1. Incidents Timeline — Area Chart (full width) */}
           <Card className="animate-slide-up col-span-1 lg:col-span-2">
-            <h3 className="text-base font-semibold text-white mb-1">
-              Traffic vs Blocked Requests
-            </h3>
-            <p className="text-xs text-cyber-400 mb-6">Last 24 hours</p>
-            <ResponsiveContainer width="100%" height={320}>
-              <LineChart data={trafficData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1c2748" />
-                <XAxis
-                  dataKey="hour"
-                  tick={{ fill: '#7a92b5', fontSize: 11 }}
-                  axisLine={{ stroke: '#243158' }}
-                  tickLine={false}
-                />
-                <YAxis
-                  tick={{ fill: '#7a92b5', fontSize: 11 }}
-                  axisLine={{ stroke: '#243158' }}
-                  tickLine={false}
-                  tickFormatter={(v: number) => formatNumber(v)}
-                />
-                <Tooltip content={<ChartTooltip />} />
-                <Line
-                  type="monotone"
-                  dataKey="traffic"
-                  name="Traffic"
-                  stroke="#3b82f6"
-                  strokeWidth={2.5}
-                  dot={false}
-                  activeDot={{ r: 5, fill: '#3b82f6', stroke: '#0f1629', strokeWidth: 2 }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="blocked"
-                  name="Blocked"
-                  stroke="#f43f5e"
-                  strokeWidth={2.5}
-                  dot={false}
-                  activeDot={{ r: 5, fill: '#f43f5e', stroke: '#0f1629', strokeWidth: 2 }}
-                />
-                <Legend
-                  wrapperStyle={{ paddingTop: 16, fontSize: 12, color: '#b0c4de' }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="text-base font-semibold text-white">
+                Incidents Timeline
+              </h3>
+              <StreamBadge connected={sseConnected} />
+            </div>
+            <p className="text-xs text-cyber-400 mb-6">
+              Incidents grouped by hour — updates live via SSE
+            </p>
+            {timelineData.length === 0 && !loading ? (
+              <p className="text-cyber-400 text-sm text-center py-16">
+                No incidents with timestamps yet.
+              </p>
+            ) : (
+              <ResponsiveContainer width="100%" height={320}>
+                <AreaChart data={timelineData}>
+                  <defs>
+                    <linearGradient id="incidentGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.25} />
+                      <stop offset="95%" stopColor="#f43f5e" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#1c2748" />
+                  <XAxis
+                    dataKey="time"
+                    tick={{ fill: '#7a92b5', fontSize: 11 }}
+                    axisLine={{ stroke: '#243158' }}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    tick={{ fill: '#7a92b5', fontSize: 11 }}
+                    axisLine={{ stroke: '#243158' }}
+                    tickLine={false}
+                    allowDecimals={false}
+                  />
+                  <Tooltip content={<ChartTooltip />} />
+                  <Area
+                    type="monotone"
+                    dataKey="count"
+                    name="Incidents"
+                    stroke="#f43f5e"
+                    strokeWidth={2.5}
+                    fill="url(#incidentGrad)"
+                    dot={false}
+                    activeDot={{ r: 5, fill: '#f43f5e', stroke: '#0f1629', strokeWidth: 2 }}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            )}
           </Card>
 
           {/* 2. Top Attack Types — Pie Chart */}
@@ -219,40 +417,46 @@ const DashboardPage: React.FC = () => {
             <h3 className="text-base font-semibold text-white mb-1">
               Top Attack Types
             </h3>
-            <p className="text-xs text-cyber-400 mb-4">Distribution of blocked threats</p>
-            <ResponsiveContainer width="100%" height={280}>
-              <PieChart>
-                <Pie
-                  data={attackTypes}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={65}
-                  outerRadius={100}
-                  paddingAngle={4}
-                  dataKey="value"
-                  strokeWidth={0}
-                >
-                  {attackTypes.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  contentStyle={{
-                    background: '#0f1629',
-                    border: '1px solid rgba(255,255,255,0.1)',
-                    borderRadius: 8,
-                    fontSize: 12,
-                    color: '#e0e8f0',
-                  }}
-                  formatter={(value) => [`${value}%`, '']}
-                />
-                <Legend
-                  formatter={(value: string) => (
-                    <span className="text-xs text-cyber-200">{value}</span>
-                  )}
-                />
-              </PieChart>
-            </ResponsiveContainer>
+            <p className="text-xs text-cyber-400 mb-4">
+              Grouped by <code className="text-cyber-300">incident_type</code>
+            </p>
+            {attackTypeData.length === 0 && !loading ? (
+              <p className="text-cyber-400 text-sm text-center py-16">No data.</p>
+            ) : (
+              <ResponsiveContainer width="100%" height={280}>
+                <PieChart>
+                  <Pie
+                    data={attackTypeData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={65}
+                    outerRadius={100}
+                    paddingAngle={4}
+                    dataKey="value"
+                    strokeWidth={0}
+                  >
+                    {attackTypeData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{
+                      background: '#0f1629',
+                      border: '1px solid rgba(255,255,255,0.1)',
+                      borderRadius: 8,
+                      fontSize: 12,
+                      color: '#e0e8f0',
+                    }}
+                    formatter={(value) => [`${value}`, 'Count']}
+                  />
+                  <Legend
+                    formatter={(value: string) => (
+                      <span className="text-xs text-cyber-200">{value}</span>
+                    )}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            )}
           </Card>
 
           {/* 3. Top Blocked IPs — Bar Chart */}
@@ -260,92 +464,90 @@ const DashboardPage: React.FC = () => {
             <h3 className="text-base font-semibold text-white mb-1">
               Top Blocked IPs
             </h3>
-            <p className="text-xs text-cyber-400 mb-4">Top 5 sources by blocked count</p>
-            <ResponsiveContainer width="100%" height={280}>
-              <BarChart
-                data={blockedIPs}
-                layout="vertical"
-                margin={{ left: 20 }}
-              >
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke="#1c2748"
-                  horizontal={false}
-                />
-                <XAxis
-                  type="number"
-                  tick={{ fill: '#7a92b5', fontSize: 11 }}
-                  axisLine={{ stroke: '#243158' }}
-                  tickLine={false}
-                />
-                <YAxis
-                  dataKey="ip"
-                  type="category"
-                  tick={{ fill: '#b0c4de', fontSize: 11 }}
-                  axisLine={{ stroke: '#243158' }}
-                  tickLine={false}
-                  width={110}
-                />
-                <Tooltip content={<ChartTooltip />} />
-                <Bar
-                  dataKey="count"
-                  name="Blocked"
-                  fill="#a855f7"
-                  radius={[0, 6, 6, 0]}
-                  barSize={20}
-                />
-              </BarChart>
-            </ResponsiveContainer>
+            <p className="text-xs text-cyber-400 mb-4">
+              Top 7 sources by incident count
+            </p>
+            {blockedIPsData.length === 0 && !loading ? (
+              <p className="text-cyber-400 text-sm text-center py-16">No data.</p>
+            ) : (
+              <ResponsiveContainer width="100%" height={280}>
+                <BarChart data={blockedIPsData} layout="vertical" margin={{ left: 20 }}>
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="#1c2748"
+                    horizontal={false}
+                  />
+                  <XAxis
+                    type="number"
+                    tick={{ fill: '#7a92b5', fontSize: 11 }}
+                    axisLine={{ stroke: '#243158' }}
+                    tickLine={false}
+                    allowDecimals={false}
+                  />
+                  <YAxis
+                    dataKey="ip"
+                    type="category"
+                    tick={{ fill: '#b0c4de', fontSize: 11 }}
+                    axisLine={{ stroke: '#243158' }}
+                    tickLine={false}
+                    width={110}
+                  />
+                  <Tooltip content={<ChartTooltip />} />
+                  <Bar
+                    dataKey="count"
+                    name="Incidents"
+                    fill="#a855f7"
+                    radius={[0, 6, 6, 0]}
+                    barSize={20}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </Card>
 
-          {/* 4. Action Distribution — Radar Chart */}
+          {/* 4. Action Distribution — Bar Chart (full width) */}
           <Card className="animate-slide-up col-span-1 lg:col-span-2">
             <h3 className="text-base font-semibold text-white mb-1">
               Action Distribution
             </h3>
-            <p className="text-xs text-cyber-400 mb-4">ML Model vs Static Rules</p>
-            <ResponsiveContainer width="100%" height={320}>
-              <RadarChart data={actionDistribution} cx="50%" cy="50%" outerRadius="70%">
-                <PolarGrid stroke="#243158" />
-                <PolarAngleAxis
-                  dataKey="category"
-                  tick={{ fill: '#b0c4de', fontSize: 12 }}
-                />
-                <PolarRadiusAxis
-                  tick={{ fill: '#7a92b5', fontSize: 10 }}
-                  axisLine={false}
-                />
-                <Radar
-                  name="ML Model"
-                  dataKey="mlModel"
-                  stroke="#06b6d4"
-                  fill="#06b6d4"
-                  fillOpacity={0.2}
-                  strokeWidth={2}
-                />
-                <Radar
-                  name="Static Rules"
-                  dataKey="staticRules"
-                  stroke="#f59e0b"
-                  fill="#f59e0b"
-                  fillOpacity={0.15}
-                  strokeWidth={2}
-                />
-                <Legend
-                  wrapperStyle={{ paddingTop: 16, fontSize: 12, color: '#b0c4de' }}
-                />
-                <Tooltip
-                  contentStyle={{
-                    background: '#0f1629',
-                    border: '1px solid rgba(255,255,255,0.1)',
-                    borderRadius: 8,
-                    fontSize: 12,
-                    color: '#e0e8f0',
-                  }}
-                />
-              </RadarChart>
-            </ResponsiveContainer>
+            <p className="text-xs text-cyber-400 mb-4">
+              Incidents grouped by <code className="text-cyber-300">action_taken</code>
+            </p>
+            {actionData.length === 0 && !loading ? (
+              <p className="text-cyber-400 text-sm text-center py-16">No data.</p>
+            ) : (
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={actionData} margin={{ left: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#1c2748" />
+                  <XAxis
+                    dataKey="action"
+                    tick={{ fill: '#b0c4de', fontSize: 12 }}
+                    axisLine={{ stroke: '#243158' }}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    tick={{ fill: '#7a92b5', fontSize: 11 }}
+                    axisLine={{ stroke: '#243158' }}
+                    tickLine={false}
+                    allowDecimals={false}
+                  />
+                  <Tooltip content={<ChartTooltip />} />
+                  <Bar
+                    dataKey="count"
+                    name="Incidents"
+                    radius={[6, 6, 0, 0]}
+                    barSize={48}
+                    isAnimationActive
+                  >
+                    {actionData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.fill} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </Card>
+
         </div>
       </div>
     </div>
