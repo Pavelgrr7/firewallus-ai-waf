@@ -12,7 +12,7 @@ data class IncidentEventDto(
     val actionTaken: String,
     val confidenceScore: Float? = null,
 
-    @JsonProperty("headersDump")
+    @JsonProperty("headers_dump")
     val payloadDump: Map<String, String>
 ) {
     init {
