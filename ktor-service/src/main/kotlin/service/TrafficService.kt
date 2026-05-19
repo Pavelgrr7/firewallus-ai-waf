@@ -66,6 +66,24 @@ class TrafficService(
             return
         }
 
+        val isRateLimited = runCatching { redisWafClient.isRateLimited(ip, limit = 100, windowSeconds = 60) }
+            .getOrDefault(false) // Fail-Open
+
+        if (isRateLimited) {
+            val incident = IncidentEventDto(
+                incidentType = "RATE_LIMIT_EXCEEDED",
+                attackerIp = ip,
+                targetUri = call.request.uri,
+                actionTaken = "BLOCK",
+                headersDump = extractTrafficLog(call).headers
+            )
+
+            serviceScope.launch { kafkaProducer.send("incidents", incident) }
+
+            call.respond(HttpStatusCode.TooManyRequests, "Too Many Requests. WAF Rate Limit Exceeded.")
+            return
+        }
+
         val matchedRule = ruleEngine.evaluate(call, activeRules)
 
         val trafficLog = extractTrafficLog(call)
