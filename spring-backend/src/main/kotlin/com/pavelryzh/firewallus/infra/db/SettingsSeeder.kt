@@ -10,17 +10,19 @@ import org.springframework.boot.ApplicationArguments
 import org.springframework.boot.ApplicationRunner
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Component
+import org.springframework.transaction.annotation.Transactional
 
 @Component
 class WafSettingsSeeder(
     private val settingsRepository: WafSettingsRepository,
     private val eventPublisher: ApplicationEventPublisher,
-    @Value("\${waf.default.rate-limit.requests:2000}") private val defaultRequests: Int,
-    @Value("\${waf.default.rate-limit.window:60}") private val defaultWindow: Int
+    @Value($$"${waf.default.rate-limit.requests:2000}") private val defaultRequests: Int,
+    @Value($$"${waf.default.rate-limit.window:60}") private val defaultWindow: Int
 ) : ApplicationRunner {
 
     private val logger = LoggerFactory.getLogger(WafSettingsSeeder::class.java)
 
+    @Transactional
     override fun run(args: ApplicationArguments) {
         if (settingsRepository.count() == 0L) {
             logger.info("Инициализация глобальных настроек WAF...")
