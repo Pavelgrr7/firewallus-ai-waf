@@ -1,4 +1,4 @@
-package com.pavelryzh.firewallus.infra
+package com.pavelryzh.firewallus.infra.api
 
 import jakarta.servlet.http.HttpServletRequest
 import org.springframework.context.annotation.Bean

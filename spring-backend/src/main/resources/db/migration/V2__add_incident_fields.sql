@@ -1,0 +1,6 @@
+ALTER TABLE incident_logs
+    ADD COLUMN target_uri VARCHAR(255) NOT NULL DEFAULT '/',
+    ADD COLUMN action_taken VARCHAR(32) NOT NULL DEFAULT 'BLOCK';
+
+ALTER TABLE incident_logs ALTER COLUMN target_uri DROP DEFAULT;
+ALTER TABLE incident_logs ALTER COLUMN action_taken DROP DEFAULT;
