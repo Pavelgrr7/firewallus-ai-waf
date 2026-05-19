@@ -54,7 +54,7 @@ class TrafficService(
                     .getOrDefault(activeRules) // Redis упал -> старые правила
 
                 settings = runCatching { redisWafClient.getSettings() }
-                    .getOrDefault(settings)!!
+                    .getOrNull() ?: settings
 
                 delay(10_000)
             }
