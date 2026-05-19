@@ -2,13 +2,16 @@ package com.pavelryzh.kafka
 
 import com.pavelryzh.plugins.logger
 import com.pavelryzh.service.dto.KafkaEvent
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonNamingStrategy
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.apache.kafka.common.serialization.StringSerializer
 import java.util.Properties
 
+@OptIn(ExperimentalSerializationApi::class)
 class KafkaTrafficProducer(
     bootstrapServers: String,
 ): AutoCloseable {
@@ -23,6 +26,8 @@ class KafkaTrafficProducer(
     internal val json = Json {
         encodeDefaults = true
         ignoreUnknownKeys = true
+        namingStrategy = JsonNamingStrategy.SnakeCase
+
     }
 
     init {
