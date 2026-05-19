@@ -10,6 +10,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import com.pavelryzh.plugins.logger
 import com.pavelryzh.routes.extractTrafficLog
+import com.pavelryzh.model.GlobalSettings
 import com.pavelryzh.service.dto.IncidentEventDto
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.ApplicationCall
@@ -40,6 +41,9 @@ class TrafficService(
     private val serviceScope = CoroutineScope(scopeJob + Dispatchers.IO + exceptionHandler)
 
     @Volatile
+    private var settings: GlobalSettings = GlobalSettings()
+
+    @Volatile
     private var activeRules: List<WafRule> = emptyList()
 
     init {
@@ -48,6 +52,10 @@ class TrafficService(
             while (isActive) {
                 activeRules = runCatching { redisWafClient.getActiveRules() }
                     .getOrDefault(activeRules) // Redis упал -> старые правила
+
+                settings = runCatching { redisWafClient.getSettings() }
+                    .getOrDefault(settings)!!
+
                 delay(10_000)
             }
         }
@@ -66,7 +74,7 @@ class TrafficService(
             return
         }
 
-        val isRateLimited = runCatching { redisWafClient.isRateLimited(ip, limit = 100, windowSeconds = 60) }
+        val isRateLimited = runCatching { redisWafClient.isRateLimited(ip, settings.limit, settings.window) }
             .getOrDefault(false) // Fail-Open
 
         if (isRateLimited) {
