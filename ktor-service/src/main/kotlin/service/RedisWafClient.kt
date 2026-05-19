@@ -62,7 +62,9 @@ class RedisWafClient(redisUri: String) : AutoCloseable {
     }
 
     suspend fun isRateLimited(ip: String, limit: Int = 50, windowSeconds: Int = 60): Boolean {
-        val key = "waf:ratelimit:ip:$ip"
+        if (isClosed.get()) throw IllegalStateException("RedisWafClient is closed")
+
+        val key = "waf:ratelimit:ip:${sanitizeIp(ip)}"
 
         // первый запуск
         if (rateLimitScriptSha == null) {
