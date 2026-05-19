@@ -11,7 +11,7 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { label: 'Dashboard', path: '/', icon: <LayoutDashboard size={20} /> },
-  { label: 'Rule Management', path: '/rules', icon: <Shield size={20} />, badge: 'Soon' },
+  { label: 'Rule Management', path: '/rules', icon: <Shield size={20} /> },
   { label: 'Settings', path: '/settings', icon: <Settings size={20} />, badge: 'Soon' },
 ];
 

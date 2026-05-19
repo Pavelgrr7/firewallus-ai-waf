@@ -11,6 +11,7 @@ interface AuthContextType {
   token: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  isInitializing: boolean;
   login: (credentials: LoginCredentials) => Promise<void>;
   logout: () => void;
 }
@@ -21,17 +22,25 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
  * AuthProvider — wraps the app and provides authentication state via context.
  */
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+    const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(true);
 
   // Restore auth state from localStorage on mount
   useEffect(() => {
-    const storedToken = localStorage.getItem('token');
-    const storedUser = localStorage.getItem('user');
-    if (storedToken && storedUser) {
-      setToken(storedToken);
-      setUser(JSON.parse(storedUser));
+    try {
+      const storedToken = localStorage.getItem('token');
+      const storedUser = localStorage.getItem('user');
+      if (storedToken && storedUser) {
+        setToken(storedToken);
+        setUser(JSON.parse(storedUser));
+      }
+    } catch {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+    } finally {
+      setIsInitializing(false);
     }
   }, []);
 
@@ -57,11 +66,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   return (
     <AuthContext.Provider
-      value={{
+            value={{
         user,
         token,
         isAuthenticated: !!token,
         isLoading,
+        isInitializing,
         login,
         logout,
       }}
