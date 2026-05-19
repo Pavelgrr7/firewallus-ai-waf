@@ -63,16 +63,14 @@ class RedisWafClient(redisUri: String) : AutoCloseable {
     }
 
     suspend fun getSettings(): GlobalSettings? {
-        val jsonString = asyncApi.get(GLOBAL_SETTINGS).await()
+        val jsonString = asyncApi.get(GLOBAL_SETTINGS).await() ?: return null
 
-        val parsedSettings = runCatching {
+        return runCatching {
             json.decodeFromString<GlobalSettings>(jsonString)
         }.onFailure { e ->
             logger.error("Failed to parse GlobalSettings from Redis: ${e.message}")
         }.getOrNull()
-        return parsedSettings
     }
-
     suspend fun isRateLimited(ip: String, limit: Int = 50, windowSeconds: Int = 60): Boolean {
         if (isClosed.get()) throw IllegalStateException("RedisWafClient is closed")
 
