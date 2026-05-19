@@ -1,8 +1,7 @@
-package com.pavelryzh.firewallus.infra
+package com.pavelryzh.firewallus.infra.api
 
 import com.pavelryzh.firewallus.incident.api.IncidentEventDto
 import com.pavelryzh.firewallus.incident.port.IncidentListener
-import com.pavelryzh.firewallus.incident.port.IncidentRepository
 import com.pavelryzh.firewallus.incident.service.IncidentService
 import org.springframework.kafka.annotation.KafkaListener
 import org.springframework.stereotype.Component
