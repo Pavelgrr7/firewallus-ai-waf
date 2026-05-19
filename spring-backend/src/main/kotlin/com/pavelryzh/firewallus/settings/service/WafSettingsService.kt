@@ -1,6 +1,6 @@
 package com.pavelryzh.firewallus.settings.service
 
-import com.pavelryzh.firewallus.api.ResourceNotFoundException
+import com.pavelryzh.firewallus.exception.ResourceNotFoundException
 import com.pavelryzh.firewallus.settings.api.UpdateSettingsDto
 import com.pavelryzh.firewallus.settings.domain.WafSettings
 import com.pavelryzh.firewallus.settings.event.SettingsUpdatedEvent

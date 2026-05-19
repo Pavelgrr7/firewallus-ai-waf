@@ -1,5 +1,5 @@
 package com.pavelryzh.firewallus.rule.domain
 
-import com.pavelryzh.firewallus.api.ResourceNotFoundException
+import com.pavelryzh.firewallus.exception.ResourceNotFoundException
 
 class RuleNotFoundException(id: Int): ResourceNotFoundException("Rule with id $id not found.")
