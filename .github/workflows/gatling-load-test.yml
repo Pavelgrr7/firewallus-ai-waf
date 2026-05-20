@@ -25,7 +25,10 @@ jobs:
         cache: 'gradle'
     - id: 'step-2'
       name: 'Start infrastructure'
-      run: 'docker compose up -d redis kafka'
+      env:
+        WAF_DEFAULT_RATE_LIMIT_REQUESTS: '100'
+        WAF_DEFAULT_RATE_LIMIT_WINDOW: '60'
+      run: 'docker compose up -d --wait'
     - id: 'step-3'
       name: 'Run Gatling Tests'
       run: 'chmod +x gradlew && ./gradlew gatlingRun --no-daemon'
