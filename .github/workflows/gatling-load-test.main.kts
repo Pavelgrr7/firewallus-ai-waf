@@ -10,13 +10,11 @@ import io.github.typesafegithub.workflows.yaml.toYaml
 
 import java.io.File
 
-println("🚀 Запуск Kotlin-скрипта генерации GitHub Actions...")
-println("📁 Текущий файл скрипта: ${__FILE__.absolutePath}")
+println("[INFO]️ Текущий файл скрипта: ${__FILE__.absolutePath}")
 
-// Проверяем, где мы находимся (защита от ошибок)
 val currentDir = __FILE__.parentFile.name
 if (currentDir != "workflows") {
-    println("⚠️ ВНИМАНИЕ: Скрипт должен лежать в папке .github/workflows/ !")
+    println("[WARN]️ Скрипт должен лежать в папке .github/workflows/ !")
 }
 
 val myWorkflow = workflow(
@@ -69,4 +67,4 @@ val targetFile = File(__FILE__.parentFile, "gatling-load-test.yml")
 
 targetFile.writeText(yamlContent)
 
-println("✅ YAML успешно сгенерирован и сохранен по пути: ${targetFile.absolutePath}")
+println("[INFO]️ YAML успешно сгенерирован и сохранен по пути: ${targetFile.absolutePath}")
