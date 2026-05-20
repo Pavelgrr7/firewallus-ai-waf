@@ -1,5 +1,6 @@
 package com.pavelryzh.service
 
+import com.pavelryzh.model.ClientIdentity
 import com.pavelryzh.model.WafRule
 import com.pavelryzh.plugins.logger
 import io.lettuce.core.RedisClient
@@ -96,22 +97,32 @@ class RedisWafClient(redisUri: String) : AutoCloseable {
         }
     }
 
-    suspend fun isIpBanned(ip: String): Boolean {
+    suspend fun isClientBanned(i: ClientIdentity): Boolean {
         if (isClosed.get()) throw IllegalStateException("RedisWafClient is closed")
 
+        val sanitizedIp = sanitizeIp(i.ip)
+        val keysToCheck = mutableListOf(
+            "$BAN_IP_KEY_PREFIX:$sanitizedIp",
+            "$MANUAL_BAN_IP_KEY_PREFIX:$sanitizedIp",
+            "$FG_BAN_KEY_PREFIX:${i.fingerprint}"
+        )
+
+        i.jwtHash?.let {
+            keysToCheck.add("$JWT_BAN_KEY_PREFIX:$it")
+        }
+
         return runCatching {
-            val sanitized = sanitizeIp(ip)
-            asyncApi.exists(
-                "$BAN_KEY_PREFIX:$sanitized",
-                "$MANUAL_BAN_KEY_PREFIX:$sanitized"
-            ).await()
+            asyncApi.exists(*keysToCheck.toTypedArray()).await()
         }.fold(
-            onSuccess = { it > 0L },
+            onSuccess = { keysFound ->
+                keysFound > 0L // Redis нашел хотя бы 1 ключ - клиент в бане
+            },
             onFailure = { ex ->
                 if (isClosed.get()) {
                     throw IllegalStateException("RedisWafClient is closed during operation", ex)
                 }
-                false
+                logger.error("Redis connection failed during ban check. Falling back to ALLOW.", ex)
+                false // Fail-Open
             }
         )
     }
@@ -138,8 +149,11 @@ class RedisWafClient(redisUri: String) : AutoCloseable {
 
     companion object {
         private const val WAF_PREFIX = "waf"
-        private const val BAN_KEY_PREFIX = "$WAF_PREFIX:ban:ip:"
-        private const val MANUAL_BAN_KEY_PREFIX = "$WAF_PREFIX:manual_ban:ip:"
+        private const val BAN_PREFIX = "ban"
+        private const val BAN_IP_KEY_PREFIX = "$WAF_PREFIX:$BAN_PREFIX:ip"
+        private const val MANUAL_BAN_IP_KEY_PREFIX = "$WAF_PREFIX:manual_ban:ip"
+        private const val JWT_BAN_KEY_PREFIX = "$WAF_PREFIX:$BAN_PREFIX:jwt"
+        private const val FG_BAN_KEY_PREFIX = "$WAF_PREFIX:$BAN_PREFIX:fg"
         private const val ACTIVE_RULES = "$WAF_PREFIX:active_rules"
 
         private val IPV4_REGEX = Regex("""^(\d{1,3}\.){3}\d{1,3}$""")
