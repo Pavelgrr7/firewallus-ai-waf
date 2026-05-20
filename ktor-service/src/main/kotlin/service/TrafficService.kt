@@ -55,9 +55,9 @@ class TrafficService(
     }
 
     suspend fun handleRequest(call: ApplicationCall) {
-        val ip = call.request.origin.remoteHost
 
         val identity = IdentityExtractor.extract(call)
+        val ip = identity.ip
 
         // Fail-Open: если Redis недоступен, разрешаем трафик (безопаснее, чем Fail-Closed)
         val isBanned = runCatching { redisWafClient.isClientBanned(identity) }

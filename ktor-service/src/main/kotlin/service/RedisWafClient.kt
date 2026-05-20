@@ -97,17 +97,17 @@ class RedisWafClient(redisUri: String) : AutoCloseable {
         }
     }
 
-    suspend fun isClientBanned(i: ClientIdentity): Boolean {
+    suspend fun isClientBanned(identity: ClientIdentity): Boolean {
         if (isClosed.get()) throw IllegalStateException("RedisWafClient is closed")
 
-        val sanitizedIp = sanitizeIp(i.ip)
+        val sanitizedIp = sanitizeIp(identity.ip)
         val keysToCheck = mutableListOf(
             "$BAN_IP_KEY_PREFIX:$sanitizedIp",
             "$MANUAL_BAN_IP_KEY_PREFIX:$sanitizedIp",
-            "$FG_BAN_KEY_PREFIX:${i.fingerprint}"
+            "$FG_BAN_KEY_PREFIX:${identity.fingerprint}"
         )
 
-        i.jwtHash?.let {
+        identity.jwtHash?.let {
             keysToCheck.add("$JWT_BAN_KEY_PREFIX:$it")
         }
 
