@@ -1,6 +1,7 @@
 package com.pavelryzh.service
 
 import com.pavelryzh.model.ClientIdentity
+import com.pavelryzh.model.GlobalSettings
 import com.pavelryzh.model.WafRule
 import com.pavelryzh.plugins.logger
 import io.lettuce.core.RedisClient
@@ -62,6 +63,15 @@ class RedisWafClient(redisUri: String) : AutoCloseable {
         }
     }
 
+    suspend fun getSettings(): GlobalSettings? {
+        val jsonString = asyncApi.get(GLOBAL_SETTINGS).await() ?: return null
+
+        return runCatching {
+            json.decodeFromString<GlobalSettings>(jsonString)
+        }.onFailure { e ->
+            logger.error("Failed to parse GlobalSettings from Redis: ${e.message}")
+        }.getOrNull()
+    }
     suspend fun isRateLimited(ip: String, limit: Int = 50, windowSeconds: Int = 60): Boolean {
         if (isClosed.get()) throw IllegalStateException("RedisWafClient is closed")
 
@@ -155,6 +165,7 @@ class RedisWafClient(redisUri: String) : AutoCloseable {
         private const val JWT_BAN_KEY_PREFIX = "$WAF_PREFIX:$BAN_PREFIX:jwt"
         private const val FG_BAN_KEY_PREFIX = "$WAF_PREFIX:$BAN_PREFIX:fg"
         private const val ACTIVE_RULES = "$WAF_PREFIX:active_rules"
+        private const val GLOBAL_SETTINGS = "$WAF_PREFIX:global_settings"
 
         private val IPV4_REGEX = Regex("""^(\d{1,3}\.){3}\d{1,3}$""")
         private val IPV6_REGEX = Regex("""^([0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4}$""")
