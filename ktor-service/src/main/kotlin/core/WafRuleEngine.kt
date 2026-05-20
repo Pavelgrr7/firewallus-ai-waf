@@ -26,9 +26,9 @@ class WafRuleEngine : AutoCloseable {
     private fun checkCondition(call: ApplicationCall, cond: Condition): Boolean {
         val actualValue = when (cond.target) {
             Target.IP -> call.request.origin.remoteHost
-            Target.URI -> call.request.uri
+            Target.URI -> normalizePayload(call.request.uri)
             Target.METHOD -> call.request.httpMethod.value
-            Target.HEADER -> call.request.headers[cond.targetKey ?: ""] ?: ""
+            Target.HEADER -> normalizePayload(call.request.headers[cond.targetKey ?: ""] ?: "")
         }
 
         return runCatching {

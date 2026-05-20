@@ -1,5 +1,6 @@
 package com.pavelryzh.service
 
+import com.pavelryzh.core.IdentityExtractor
 import com.pavelryzh.core.WafRuleEngine
 import com.pavelryzh.kafka.KafkaTrafficProducer
 import com.pavelryzh.model.Action
@@ -62,10 +63,12 @@ class TrafficService(
     }
 
     suspend fun handleRequest(call: ApplicationCall) {
-        val ip = call.request.origin.remoteHost
+
+        val identity = IdentityExtractor.extract(call)
+        val ip = identity.ip
 
         // Fail-Open: если Redis недоступен, разрешаем трафик (безопаснее, чем Fail-Closed)
-        val isBanned = runCatching { redisWafClient.isIpBanned(ip) }
+        val isBanned = runCatching { redisWafClient.isClientBanned(identity) }
             .onFailure { logger.error("Redis is down, allowing traffic (Fail-Open)", it) }
             .getOrDefault(false)
 
@@ -150,6 +153,7 @@ class TrafficService(
             }
         }
     }
+
     companion object {
         const val TOPIC_TRAFFIC = "traffic-logs"
         const val TOPIC_INCIDENT = "incidents"
