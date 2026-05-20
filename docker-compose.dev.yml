@@ -1,0 +1,9 @@
+dbgate:
+  image: dbgate/dbgate:alpine
+  container_name: dbgate
+  restart: unless-stopped
+  ports:
+    - "8081:3000"
+  depends_on:
+    - postgres
+    - redis
