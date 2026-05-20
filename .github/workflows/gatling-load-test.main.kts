@@ -43,7 +43,11 @@ val myWorkflow = workflow(
 
         run(
             name = "Start infrastructure",
-            command = "docker compose up -d redis kafka"
+            env = linkedMapOf(
+                "WAF_DEFAULT_RATE_LIMIT_REQUESTS" to "100",
+                "WAF_DEFAULT_RATE_LIMIT_WINDOW" to "60"
+            ),
+            command = "docker compose up -d --wait"
         )
 
         run(

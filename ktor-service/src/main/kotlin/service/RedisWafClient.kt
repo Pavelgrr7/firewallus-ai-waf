@@ -72,6 +72,7 @@ class RedisWafClient(redisUri: String) : AutoCloseable {
             logger.error("Failed to parse GlobalSettings from Redis: ${e.message}")
         }.getOrNull()
     }
+
     suspend fun isRateLimited(ip: String, limit: Int = 50, windowSeconds: Int = 60): Boolean {
         if (isClosed.get()) throw IllegalStateException("RedisWafClient is closed")
 

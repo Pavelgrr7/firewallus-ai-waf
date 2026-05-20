@@ -15,7 +15,6 @@ import com.pavelryzh.model.GlobalSettings
 import com.pavelryzh.service.dto.IncidentEventDto
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.ApplicationCall
-import io.ktor.server.plugins.origin
 import io.ktor.server.request.uri
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondText

@@ -26,9 +26,19 @@ class WafAttackSimulation : Simulation() {
 
     // Брутфорс / DDoS
     private val rateLimitAttack = scenario("Spammers")
-        // Делаем 150 быстрых запросов в цикле, чтобы пробить лимит в 100 запросов
-        .repeat(150).on(
-            exec(http("Spam Login").get("/login"))
+        // Исчерпание лимита
+        .repeat(100).on(
+            exec(
+                http("Fill Bucket")
+                    .get("/login")
+                    .check(status().`in`(200, 404, 429))
+            )
+        )
+        // Проверка блокировки
+        .exec(
+            http("Rate Limit Blocked")
+                .get("/login")
+                .check(status().`is`(429))
         )
 
     init {

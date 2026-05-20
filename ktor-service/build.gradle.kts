@@ -2,7 +2,7 @@ plugins {
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.ktor)
     alias(libs.plugins.kotlin.plugin.serialization)
-    id("io.gatling.gradle") version "3.11.3"
+    id("io.gatling.gradle") version "3.11.5"
 }
 
 group = "com.pavelryzh"
@@ -41,4 +41,3 @@ dependencies {
     testImplementation(libs.ktor.server.test.host)
     testImplementation(libs.kotlin.test.junit)
 }
-//extra["reportsDir"] = layout.buildDirectory.dir("reports").get().asFile
