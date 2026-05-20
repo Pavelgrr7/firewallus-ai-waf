@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.ktor)
     alias(libs.plugins.kotlin.plugin.serialization)
+    id("io.gatling.gradle") version "3.11.3"
 }
 
 group = "com.pavelryzh"
@@ -34,6 +35,10 @@ dependencies {
     implementation(libs.logback.classic)
     implementation(libs.ktor.server.config.yaml)
     implementation("io.lettuce:lettuce-core:6.3.2.RELEASE")
+
+    gatlingImplementation("io.gatling.highcharts:gatling-charts-highcharts:3.11.5")
+
     testImplementation(libs.ktor.server.test.host)
     testImplementation(libs.kotlin.test.junit)
 }
+//extra["reportsDir"] = layout.buildDirectory.dir("reports").get().asFile
