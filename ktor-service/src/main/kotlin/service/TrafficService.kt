@@ -145,6 +145,7 @@ class TrafficService(
             }
         }
     }
+
     companion object {
         const val TOPIC_TRAFFIC = "traffic-logs"
         const val TOPIC_INCIDENT = "incidents"
