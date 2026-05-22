@@ -4,3 +4,5 @@
 /ktor-service/docs/.swagger-codegen/VERSION
 /hs_err_pid167100.log
 .env
+__pycache__/
+/ai-module/tests/
