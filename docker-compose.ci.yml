@@ -1,0 +1,26 @@
+# ТОЛЬКО настройки для GitHub Actions
+services:
+  backend-spring:
+    build:
+      cache_from:
+        - type=gha,scope=spring
+      cache_to:
+        - type=gha,mode=max,scope=spring
+
+  ktor-service:
+    build:
+      cache_from:
+        - type=gha,scope=ktor
+      cache_to:
+        - type=gha,mode=max,scope=ktor
+
+  admin-frontend:
+    build:
+      cache_from:
+        - type=gha,scope=frontend
+      cache_to:
+        - type=gha,mode=max,scope=frontend
+
+  dbgate:
+    profiles:
+      - donotstart

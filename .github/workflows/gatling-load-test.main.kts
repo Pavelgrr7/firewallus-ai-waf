@@ -60,7 +60,7 @@ val myWorkflow = workflow(
                 "WAF_DEFAULT_RATE_LIMIT_REQUESTS" to "100",
                 "WAF_DEFAULT_RATE_LIMIT_WINDOW" to "60"
             ),
-            command = "docker compose up -d --wait"
+            command = "docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d --wait"
         )
 
         run(

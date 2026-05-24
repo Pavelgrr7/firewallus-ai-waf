@@ -37,7 +37,7 @@ jobs:
         SEED_DEFAULT_RULES: '${{ secrets.SEED_DEFAULT_RULES }}'
         WAF_DEFAULT_RATE_LIMIT_REQUESTS: '100'
         WAF_DEFAULT_RATE_LIMIT_WINDOW: '60'
-      run: 'docker compose up -d --wait'
+      run: 'docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d --wait'
     - id: 'step-3'
       name: 'Run Gatling Tests'
       run: 'cd ktor-service && chmod +x gradlew && ./gradlew gatlingRun --no-daemon'
