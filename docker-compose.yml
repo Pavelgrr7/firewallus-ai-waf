@@ -12,6 +12,7 @@ services:
       - 'SPRING_KAFKA_BOOTSTRAP_SERVERS=${DEFAULT_KAFKA}'
       - 'DEFAULT_RATELIMIT_REQUESTS=${DEFAULT_RATELIMIT_REQUESTS}'
       - 'DEFAULT_RATELIMIT_WINDOW=${DEFAULT_RATELIMIT_WINDOW}'
+      - 'SEED_DEFAULT_RULES=${SEED_DEFAULT_RULES}'
     depends_on:
       redis:
         condition: service_started

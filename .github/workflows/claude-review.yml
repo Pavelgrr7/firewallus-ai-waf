@@ -1,0 +1,40 @@
+# This file was generated using Kotlin DSL (.github/workflows/claude-review.main.kts).
+# If you want to modify the workflow, please change the Kotlin file and regenerate this YAML file.
+# Generated with https://github.com/typesafegithub/github-workflows-kt
+
+name: 'Claude Code Review'
+on:
+  pull_request:
+    types:
+    - 'opened'
+    - 'synchronize'
+jobs:
+  review:
+    name: 'Claude Review'
+    runs-on: 'ubuntu-latest'
+    permissions:
+      contents: 'read'
+      pull-requests: 'write'
+    steps:
+    - id: 'step-0'
+      name: 'Check out'
+      uses: 'actions/checkout@v4'
+      with:
+        fetch-depth: '0'
+    - id: 'step-1'
+      name: 'Load Prompt into Environment'
+      run: |-
+        echo "CLAUDE_PROMPT<<EOF" >> $GITHUB_ENV
+        cat .github/claude-review-prompt.md >> $GITHUB_ENV
+        echo "EOF" >> $GITHUB_ENV
+    - id: 'step-2'
+      name: 'Run Claude Code Review'
+      uses: 'anthropics/claude-code-action@v1'
+      with:
+        anthropic_api_key: '${{ secrets.ANTHROPIC_API_KEY }}'
+        github_token: '${{ secrets.GITHUB_TOKEN }}'
+        prompt: '${{ env.CLAUDE_PROMPT }}'
+        claude_args: '--model claude-sonnet-4.6 --allowed-tools "Write,Read,Bash(gh pr view *),Bash(gh pr diff *),Bash(gh pr comment *),Bash(gh pr review *),Bash(git *),Bash(rm *)"'
+        show_full_output: 'true'
+      env:
+        ANTHROPIC_BASE_URL: '${{ secrets.ANTHROPIC_BASE_URL }}'
