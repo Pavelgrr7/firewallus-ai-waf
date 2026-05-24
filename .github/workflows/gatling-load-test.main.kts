@@ -6,6 +6,7 @@ import io.github.typesafegithub.workflows.domain.*
 import io.github.typesafegithub.workflows.domain.triggers.*
 import io.github.typesafegithub.workflows.dsl.workflow
 import io.github.typesafegithub.workflows.actions.actions.*
+import io.github.typesafegithub.workflows.dsl.expressions.expr
 import io.github.typesafegithub.workflows.yaml.toYaml
 
 import java.io.File
@@ -28,7 +29,7 @@ val myWorkflow = workflow(
     job(
         id = "run-gatling",
         name = "Run Load Tests",
-        runsOn = RunnerType.UbuntuLatest
+        runsOn = RunnerType.UbuntuLatest,
     ) {
         uses(name = "Check out", action = CheckoutV4())
 
@@ -44,6 +45,18 @@ val myWorkflow = workflow(
         run(
             name = "Start infrastructure",
             env = linkedMapOf(
+                // Функция expr() скажет генератору обернуть это в ${{ secrets.NAME }}
+                "POSTGRES_USER" to expr("secrets.POSTGRES_USER"),
+                "POSTGRES_PASSWORD" to expr("secrets.POSTGRES_PASSWORD"),
+                "DEFAULT_ADMIN_USERNAME" to expr("secrets.DEFAULT_ADMIN_USERNAME"),
+                "DEFAULT_ADMIN_PASSWORD" to expr("secrets.DEFAULT_ADMIN_PASSWORD"),
+                "JWT_SECRET" to expr("secrets.JWT_SECRET"),
+                "DEFAULT_KAFKA" to expr("secrets.DEFAULT_KAFKA"),
+                "DEFAULT_REDIS_HOST" to expr("secrets.DEFAULT_REDIS_HOST"),
+                "DEFAULT_REDIS_PORT" to expr("secrets.DEFAULT_REDIS_PORT"),
+                "SEED_DEFAULT_RULES" to expr("secrets.SEED_DEFAULT_RULES"),
+
+                // Дефолтные лимиты для теста
                 "WAF_DEFAULT_RATE_LIMIT_REQUESTS" to "100",
                 "WAF_DEFAULT_RATE_LIMIT_WINDOW" to "60"
             ),
