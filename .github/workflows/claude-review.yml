@@ -24,8 +24,14 @@ jobs:
     - id: 'step-1'
       name: 'Load Prompt into Environment'
       run: |-
+        tr -d '\r' < .github/claude-review-prompt.md > clean_prompt.md
+
         echo "CLAUDE_PROMPT<<EOF" >> $GITHUB_ENV
-        cat .github/claude-review-prompt.md >> $GITHUB_ENV
+
+        cat clean_prompt.md >> $GITHUB_ENV
+
+        echo "" >> $GITHUB_ENV
+
         echo "EOF" >> $GITHUB_ENV
     - id: 'step-2'
       name: 'Run Claude Code Review'
