@@ -33,12 +33,17 @@ val myWorkflow = workflow(
             action = CheckoutV4(fetchDepth = CheckoutV4.FetchDepth.Value(0))
         )
 
-        // Конструкция <<EOF позволяет записывать переносы строк
         run(
             name = "Load Prompt into Environment",
             command = """
+                tr -d '\r' < .github/claude-review-prompt.md > clean_prompt.md
+                
                 echo "CLAUDE_PROMPT<<EOF" >> ${'$'}GITHUB_ENV
-                cat .github/claude-review-prompt.md >> ${'$'}GITHUB_ENV
+                
+                cat clean_prompt.md >> ${'$'}GITHUB_ENV
+                
+                echo "" >> ${'$'}GITHUB_ENV
+                
                 echo "EOF" >> ${'$'}GITHUB_ENV
             """.trimIndent()
         )
