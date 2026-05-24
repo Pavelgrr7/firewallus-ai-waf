@@ -65,7 +65,7 @@ val myWorkflow = workflow(
 
         run(
             name = "Run Gatling Tests",
-            command = "chmod +x gradlew && ./gradlew gatlingRun --no-daemon"
+            command = "cd ktor-service && chmod +x gradlew && ./gradlew gatlingRun --no-daemon"
         )
 
         uses(
