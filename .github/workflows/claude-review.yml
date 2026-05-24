@@ -25,13 +25,9 @@ jobs:
       name: 'Load Prompt into Environment'
       run: |-
         tr -d '\r' < .github/claude-review-prompt.md > clean_prompt.md
-
         echo "CLAUDE_PROMPT<<EOF" >> $GITHUB_ENV
-
         cat clean_prompt.md >> $GITHUB_ENV
-
         echo "" >> $GITHUB_ENV
-
         echo "EOF" >> $GITHUB_ENV
     - id: 'step-2'
       name: 'Run Claude Code Review'
@@ -40,7 +36,26 @@ jobs:
         anthropic_api_key: '${{ secrets.ANTHROPIC_API_KEY }}'
         github_token: '${{ secrets.GITHUB_TOKEN }}'
         prompt: '${{ env.CLAUDE_PROMPT }}'
-        claude_args: '--model claude-sonnet-4.6 --allowed-tools "Write,Read,Bash(gh pr view *),Bash(gh pr diff *),Bash(gh pr comment *),Bash(gh pr review *),Bash(git *),Bash(rm *)"'
+        claude_args: '--model claude-sonnet-4.6 --allowed-tools "Write,Read,Bash(git *),Bash(cat *),Bash(ls *)"'
         show_full_output: 'true'
       env:
         ANTHROPIC_BASE_URL: '${{ secrets.ANTHROPIC_BASE_URL }}'
+    - id: 'step-3'
+      name: 'Publish Review to GitHub'
+      env:
+        PR_NUMBER: '${{ github.event.pull_request.number }}'
+        GITHUB_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
+      run: |-
+        VERDICT=$(head -n 1 pr_review.md | tr -d '\r' | tr -d ' ')
+
+        tail -n +2 pr_review.md > final_review.md
+
+        echo "Verdict is: $VERDICT"
+
+        if [ "$VERDICT" = "APPROVE" ]; then
+            gh pr review $PR_NUMBER --approve -F final_review.md
+        elif [ "$VERDICT" = "REQUEST_CHANGES" ]; then
+            gh pr review $PR_NUMBER --request-changes -F final_review.md
+        else
+            gh pr review $PR_NUMBER --comment -F final_review.md
+        fi
