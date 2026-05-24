@@ -8,6 +8,7 @@ import io.github.typesafegithub.workflows.dsl.workflow
 import io.github.typesafegithub.workflows.actions.actions.*
 import io.github.typesafegithub.workflows.dsl.expressions.expr
 import io.github.typesafegithub.workflows.yaml.toYaml
+import io.github.typesafegithub.workflows.domain.actions.CustomAction
 
 import java.io.File
 
@@ -42,6 +43,15 @@ val myWorkflow = workflow(
             )
         )
 
+        uses(
+            name = "Set up Docker Buildx",
+            action = CustomAction(
+                actionOwner = "docker",
+                actionName = "setup-buildx-action",
+                actionVersion = "v3"
+            )
+        )
+
         run(
             name = "Start infrastructure",
             env = linkedMapOf(
@@ -60,7 +70,7 @@ val myWorkflow = workflow(
                 "WAF_DEFAULT_RATE_LIMIT_REQUESTS" to "100",
                 "WAF_DEFAULT_RATE_LIMIT_WINDOW" to "60"
             ),
-            command = "docker compose up -d --wait"
+            command = "docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d --wait"
         )
 
         run(
