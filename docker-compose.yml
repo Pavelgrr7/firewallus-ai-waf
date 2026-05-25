@@ -70,6 +70,18 @@ services:
     depends_on:
       - ktor-service
 
+  ai-module:
+    build: './ai-module'
+    depends_on:
+      redis:
+        condition: service_started
+      kafka:
+        condition: service_healthy
+    volumes:
+      - ./ai-module/models:/app/models
+    ports:
+      - "8001:8001"
+
   admin-frontend:
     build: './admin-frontend'
     container_name: admin-frontend
