@@ -25,7 +25,7 @@ def send_telegram_alert(attack_count, top_ip):
         return
 
     message = (
-        f"<b>КРИТИЧЕСКИЙ АЛЕРТ WAF</b> 🚨\n\n"
+        f"<b>КРИТИЧЕСКИЙ АЛЕРТ WAF</b>\n\n"
         f"Зафиксирована массовая атака!\n"
         f"<b>Инцидентов:</b> {attack_count} за последнюю минуту\n"
         f"<b>Главный атакующий IP:</b> {top_ip}\n\n"
