@@ -52,7 +52,7 @@ val myWorkflow = workflow(
                     "github_token" to expr("secrets.GITHUB_TOKEN"),
                     "prompt" to expr("env.CLAUDE_PROMPT"),
                     // Только чтение, запись и гит
-                    "claude_args" to "--model claude-sonnet-4.6 --allowed-tools \"Write,Read,Bash(git *),Bash(cat *),Bash(ls *)\"",
+                    "claude_args" to "--model claude-opus-4.5 --allowed-tools \"Write,Read,Bash(git *),Bash(cat *),Bash(ls *)\"",
                     "show_full_output" to "true"
                 )
             ),
