@@ -15,7 +15,16 @@ class WafSettings(
     var rateLimitWindowSec: Int,
 
     @Column(name = "adaptive_mode_enabled")
-    var adaptiveModeEnabled: Boolean
+    var adaptiveModeEnabled: Boolean,
+
+    @Column(name = "tg_bot_token")
+    var tgBotToken: String? = null,
+
+    @Column(name = "tg_chat_id")
+    var tgChatId: String? = null,
+
+    @Column(name = "alert_threshold", nullable = false)
+    var alertThreshold: Int = 50
 ) {
     @Id
     var id: Int = 1 // Всегда 1
