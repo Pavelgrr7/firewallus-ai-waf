@@ -138,6 +138,21 @@ class RedisWafClient(redisUri: String) : AutoCloseable {
         )
     }
 
+    suspend fun isWhitelisted(ip: String): Boolean {
+        if (isClosed.get()) return false
+
+        return runCatching {
+            val sanitizedIp = sanitizeIp(ip)
+            asyncApi.exists("$WHITELIST:$sanitizedIp").await()
+        }.fold(
+            onSuccess = { it > 0L },
+            onFailure = { ex ->
+                logger.error("Failed to check whitelist for IP $ip", ex)
+                false // Если Redis упал, считаем, что IP не в вайтлисте (Fail-Closed для вайтлиста)
+            }
+        )
+    }
+
     // НА ДАННОМ ЭТАПЕ НЕ НУЖНА ИДЕАЛЬНАЯ PROD-READY ПРОВЕРКА
     // ДОСТАТОЧНО БАЗОВОГО МЕТОДА, КОТОРЫЙ БУДЕТ ДЕТАЛЬНО ПРОРАБОТАН В БУДУЩЕМ
     private fun sanitizeIp(ip: String): String {
@@ -167,6 +182,7 @@ class RedisWafClient(redisUri: String) : AutoCloseable {
         private const val FG_BAN_KEY_PREFIX = "$WAF_PREFIX:$BAN_PREFIX:fg"
         private const val ACTIVE_RULES = "$WAF_PREFIX:active_rules"
         private const val GLOBAL_SETTINGS = "$WAF_PREFIX:global_settings"
+        private const val WHITELIST = "$WAF_PREFIX:whitelist:ip"
 
         private val IPV4_REGEX = Regex("""^(\d{1,3}\.){3}\d{1,3}$""")
         private val IPV6_REGEX = Regex("""^([0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4}$""")
