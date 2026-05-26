@@ -103,7 +103,8 @@ class DefaultRulesSeeder(
                     name = savedRule.name,
                     action = savedRule.action,
                     conditions = savedRule.conditions,
-                    isActive = savedRule.isActive
+                    isActive = savedRule.isActive,
+                    adminId = null
                 )
             )
         }
