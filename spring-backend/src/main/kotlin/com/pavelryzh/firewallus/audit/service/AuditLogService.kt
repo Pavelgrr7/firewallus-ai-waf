@@ -9,6 +9,12 @@ import org.springframework.transaction.annotation.Transactional
 
 @Service
 class AuditLogService(private val auditRepo: AuditLogRepository){
+
+    @Transactional
+    fun save(log: AuditLog): AuditLog{
+        return auditRepo.save(log)
+    }
+
     @Transactional(readOnly = true)
     fun findAll(pageable: Pageable): Page<AuditLog> {
         return auditRepo.findAll(pageable)

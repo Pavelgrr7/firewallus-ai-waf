@@ -15,7 +15,7 @@ data class CreateManagedIpDto(
         regexp = "^([0-9]{1,3}\\.){3}[0-9]{1,3}$|^([0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4}$",
         message = "Неверный формат IP-адреса"
     )
-    val ipAddress: IpAddress,
+    val ipAddress: String,
 
     val listType: IpListType,
 

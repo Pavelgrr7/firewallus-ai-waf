@@ -1,5 +1,6 @@
 package com.pavelryzh.firewallus.rule.service
 
+import com.pavelryzh.firewallus.infra.security.CurrentAdminProvider
 import com.pavelryzh.firewallus.rule.event.RuleCacheEvent
 import com.pavelryzh.firewallus.rule.api.CreateRuleDto
 import com.pavelryzh.firewallus.rule.api.UpdateRuleDto
@@ -14,7 +15,11 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
 @Service
-class RuleService(private val ruleRepo: RuleRepository, private val eventPublisher: ApplicationEventPublisher) {
+class RuleService(
+    private val ruleRepo: RuleRepository,
+    private val eventPublisher: ApplicationEventPublisher,
+    private val currentAdminProvider: CurrentAdminProvider
+) {
 
     @Transactional(readOnly = true)
     fun getAllRules(pageable: Pageable): Page<Rule> {
@@ -71,12 +76,17 @@ class RuleService(private val ruleRepo: RuleRepository, private val eventPublish
             name = rule.name,
             action = rule.action,
             conditions = rule.conditions,
-            isActive = rule.isActive
+            isActive = rule.isActive,
+            adminId = currentAdminProvider.getCurrentAdminId()
+
         )
         eventPublisher.publishEvent(event)
     }
 
     private fun publishDeletedEvent(id: Int) {
-        eventPublisher.publishEvent(RuleCacheEvent.Deleted(id))
+        eventPublisher.publishEvent(RuleCacheEvent.Deleted(
+            adminId = currentAdminProvider.getCurrentAdminId(),
+            ruleId = id
+        ))
     }
 }

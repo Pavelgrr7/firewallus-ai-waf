@@ -29,13 +29,15 @@ class ManagedIpService(
     }
 
     @Transactional
-    fun addIp(ipAddress: IpAddress, type: IpListType, description: String?): ManagedIp {
-        ipRepo.findByIpAddress(ipAddress.value)?.let { existingIp ->
-            throw IllegalArgumentException("IP $ipAddress уже находится в ${existingIp.listType}")
+    fun addIp(ipAddress: String, type: IpListType, description: String?): ManagedIp {
+        val validIp = IpAddress(ipAddress)
+
+        ipRepo.findByIpAddress(validIp.value)?.let { existingIp ->
+            throw IllegalArgumentException("IP ${validIp.value} уже находится в ${existingIp.listType}")
         }
 
         val newIp = ManagedIp(
-            ipAddress = ipAddress.value,
+            ipAddress = ipAddress,
             listType = type,
             description = description
         )
