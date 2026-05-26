@@ -21,6 +21,14 @@ services:
       cache_to:
         - type=gha,mode=max,scope=frontend
 
+  notification-service:
+    build:
+      cache_from:
+        - type=gha,scope=notification
+      cache_to:
+        - type=gha,mode=max,scope=notification
+
+
   dbgate:
     profiles:
       - donotstart
