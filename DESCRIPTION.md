@@ -9,69 +9,77 @@
 *   **Инфраструктура:** Без Kubernetes (используем Docker Compose).
 
 ## 2. Архитектура и Зоны ответственности
-Система состоит из 4-х основных узлов (микросервисов).
+Система состоит из 3-х основных узлов (микросервисов).
 
-### 2.1. Nginx (Reverse Proxy & Load Balancer)
-*   **Стек:** Nginx (Alpine Docker Image).
-*   **Роль:** Входная точка в систему (DMZ).
-*   **Обязанности:**
-    *   Терминация публичного трафика (80/443 порты).
-    *   Проброс реальных IP-адресов клиента (`X-Real-IP`, `X-Forwarded-For`).
-    *   Балансировка нагрузки (Round Robin) между инстансами Ktor Gateway.
+### 2.1 Ktor Gateway (Traffic Guard)
+**Пайплайн фильтрации (Fail-Fast):**
+1. Извлечение `ClientIdentity` (IP, MD5(Fingerprint), MD5(JWT)).
+2. Проверка **Whitelist** (Redis) -> Пропуск.
+3. Проверка **Ban Lists** (Redis MGET) -> HTTP 403.
+4. Проверка **Rate Limiter** (Lua/Redis) -> HTTP 429.
+5. Оценка по **Rule Engine** (Local In-Memory Cache) -> HTTP 403 или Log.
+6. Отправка `TrafficEventDto` в Kafka.
+7. Проксирование на целевой бэкенд.
 
-### 2.2. Ktor Gateway (Traffic Guard)
-*   **Стек:** Kotlin, Ktor, Netty, Kotlin Coroutines.
-*   **Роль:** Data Plane. Умный шлюз, принимающий решения о пропуске трафика.
-*   **Обязанности:**
-    *   **Hot Check:** Проверяет IP в Redis (`waf:ban:ip:{ip}`). Если есть бан — отдает 403 Forbidden.
-    *   **Rule Engine:** Проверяет запрос по статическим правилам из Redis (in-memory кэш из `waf:active_rules`).
-    *   **Shadowing:** Асинхронно (fire-and-forget) отправляет JSON с метаданными запроса в Kafka (топик `traffic-logs`).
-    *   Проксирует легитимный трафик на защищаемый бэкенд.
+### 2.2 Manager Core (Spring Boot)
+*   Управление ACL (Black/White списки).
+*   Управление статическими правилами и глобальными настройками (Singleton Table).
+*   Трансляция инцидентов из Kafka на Frontend через **SSE (Server-Sent Events)**.
+*   Ведение журнала аудита (`audit_logs`) администраторов.
 
-### 2.3. Manager Core (Control Plane)
-*   **Стек:** Java 21, Kotlin, Spring Boot 3, Spring Data JPA, Spring Security.
-*   **Роль:** Админка, управление правилами и хранение истории.
-*   **Обязанности:**
-    *   CRUD для управления администраторами и правилами WAF (REST API).
-    *   **Write-Through Cache:** При изменении правила в Postgres, синхронно (через Spring Events) обновляет словарь правил в Redis.
-    *   Чтение топика `incidents` из Kafka и сохранение в Postgres.
-
-### 2.4. AI Brain (ML Analyzer)
-*   **Стек:** Python, FastAPI, Scikit-learn / PyTorch.
-*   **Роль:** Анализатор аномалий.
-*   **Обязанности:**
-    *   Читает топик `traffic-logs` из Kafka.
-    *   Извлекает фичи (Feature extraction).
-    *   Выполняет предикты (поиск аномалий).
-    *   При обнаружении атаки: 
-        1. Пишет бан в Redis (`waf:ban:ip:{ip}`) с TTL. 
-        2. Отправляет инцидент в Kafka (`incidents`) для аудита в Spring.
+### 2.3 ML Analyzer & Alerting Service (Python)
+*   **AI Brain:** Расчет энтропии Шеннона, векторизация TF-IDF, поиск аномалий, блокировка через Redis.
+*   **Alerting Worker:** Читает топик `incidents`, использует алгоритм скользящего окна (Sliding Window). При превышении `alert_threshold` шлет уведомление в Telegram (конфигурация читается из Redis).
 
 ## 3. Инфраструктура данных
 
-### 3.1. Брокер сообщений: Kafka
-*   **Topic `traffic-logs`:** Producer = Ktor, Consumer = Python. (Сырой трафик).
-*   **Topic `incidents`:** Producer = Python, Consumer = Spring. (Вердикты об атаках).
+### 3.1 Kafka Topics
+*   `traffic-logs` — Сырой трафик от Ktor (Producer: Ktor, Consumer: Python ML).
+*   `incidents` — Зафиксированные атаки и срабатывания WAF (Producers: Ktor, Python ML; Consumers: Spring, Alerting Service).
 
-### 3.2. Горячее хранилище: Redis
-*   `waf:ban:ip:{ip}` (String) - Временные баны от ML (с TTL).
-*   `waf:manual_ban:ip:{ip}` (String) - Постоянные баны от админа (без TTL).
-*   `waf:active_rules` (Redis Hash) - Кэш статических правил (Key: RuleID, Value: Rule JSON).
+### 3.2 Redis (Hot Data)
+*   `waf:whitelist:ip:{ip}` — Белый список (без TTL).
+*   `waf:manual_ban:ip:{ip}` — Постоянный бан от админа.
+*   `waf:ban:ip:{ip}`, `waf:ban:fp:{hash}`, `waf:ban:jwt:{hash}` — ML баны с TTL.
+*   `waf:active_rules` — (Hash) Активные статические правила.
+*   `waf:global_settings` — (JSON String) Лимиты Rate Limiter и настройки Telegram.
+*   `waf:ratelimit:ip:{ip}` — Счетчики (управляются атомарно через Lua).
 
-### 3.3. Холодное хранилище: PostgreSQL
-*   `admins`: admin_id (UUID), username, password_hash, role.
-*   `rules`: rule_id (SERIAL), name, action, is_active, created_by, created_at, **conditions (JSONB)**.
-*   `incident_logs`: incident_id (UUID), timestamp, attacker_ip, target_uri, confidence_score, payload_dump (JSONB).
+### 3.3 PostgreSQL (Cold Data / Source of Truth)
+*   `admins`: Учетные записи администраторов (BCrypt).
+*   `ip_lists`: Blacklist и Whitelist адреса (`ip_address`, `list_type`).
+*   `waf_settings`: (Singleton, id=1) Настройки Rate Limit и Telegram-интеграции.
+*   `rules`: Статические правила, колонка `conditions` хранится как **JSONB**.
+*   `incident_logs`: История атак (без внешних ключей, для производительности).
+*   `audit_logs`: История действий администраторов (кто, когда, какое правило изменил).
 
 ## 4. Контракт REST API (Manager Core)
-Базовый путь: `/api/v1`
-*   `POST /auth/login` — Получение JWT токена.
-*   `GET /rules` — Список правил (с пагинацией `?page=0&size=20`).
-*   `POST /rules` — Создать правило.
-*   `POST /rules/{id}/enable` — Включить правило (Action endpoint).
-*   `POST /rules/{id}/disable` — Выключить правило.
-*   `DELETE /rules/{id}` — Удалить правило.
-*   `GET /logs` — Просмотр инцидентов (пагинация).
+*Базовый путь: `/api/v1`*
+
+**Auth:**
+*   `POST /auth/login` — Получение JWT.
+
+**Rules:**
+*   `GET /rules` — Список (Pageable).
+*   `POST /rules` — Создать.
+*   `POST /rules/seed-defaults` — Заполнить базу базовыми сигнатурами (SQLi, XSS, Path Traversal).
+*   `PATCH /rules/{id}` — Частичное обновление.
+*   `POST /rules/{id}/enable` | `/disable` — Смена статуса (RPC-стиль).
+*   `DELETE /rules/{id}` — Удаление.
+
+**Access Control (ACL):**
+*   `GET /access-control` — Получение IP (опциональный фильтр `?listType=BLACKLIST`).
+*   `POST /access-control` — Добавить IP в белый/черный список.
+*   `DELETE /access-control/{id}` — Удалить IP.
+
+**Settings:**
+*   `GET /settings` — Глобальные лимиты и настройки алертов.
+*   `PATCH /settings` — Изменение конфигурации на лету.
+
+**Telemetry & Audit:**
+*   `GET /incidents` — Постраничная история атак.
+*   `GET /incidents/stream` — Подключение к потоку SSE для дашборда.
+*   `GET /audit-logs` — История действий администраторов (Read-Only).
 
 ## 5. Структура статических правил (Rule Engine)
 Правила хранятся в БД в поле `conditions` (JSONB) и передаются на Frontend/Ktor в виде унифицированного контракта:
