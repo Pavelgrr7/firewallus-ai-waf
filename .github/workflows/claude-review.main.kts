@@ -60,6 +60,7 @@ val myWorkflow = workflow(
         )
 
         // Fallback на GPT, если Sonnet недоступен
+        // Важно: используется не стандартный api antropic, а сторонний провайдер, у которого модель gpt-5.5 есть
         val reviewGpt = uses(
             name = "Run Claude Code Review (GPT-5.5 Fallback)",
             // только если первый шаг упал
@@ -81,6 +82,7 @@ val myWorkflow = workflow(
 
         run(
             name = "Publish Review to GitHub",
+            condition = expr("steps.${reviewSonnet.id}.outcome == 'success' || steps.${reviewGpt.id}.outcome == 'success'"),
             env = linkedMapOf(
                 "PR_NUMBER" to expr("github.event.pull_request.number"),
                 "GITHUB_TOKEN" to expr("secrets.GITHUB_TOKEN")

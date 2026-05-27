@@ -72,3 +72,4 @@ jobs:
         else
             gh pr review $PR_NUMBER --comment -F final_review.md
         fi
+      if: '${{ steps.step-2.outcome == ''success'' || steps.step-3.outcome == ''success'' }}'
