@@ -42,7 +42,9 @@ val myWorkflow = workflow(
 
         // Анализ от клода
         uses(
-            name = "Run Claude Code Review",
+            id = "review_sonnet",
+            name = "Run Claude Code Review (Sonnet)",
+            continueOnError = true,
             action = CustomAction(
                 actionOwner = "anthropics",
                 actionName = "claude-code-action",
@@ -51,8 +53,28 @@ val myWorkflow = workflow(
                     "anthropic_api_key" to expr("secrets.ANTHROPIC_API_KEY"),
                     "github_token" to expr("secrets.GITHUB_TOKEN"),
                     "prompt" to expr("env.CLAUDE_PROMPT"),
-                    // Только чтение, запись и гит
-                    "claude_args" to "--model claude-opus-4.5 --allowed-tools \"Write,Read,Bash(git *),Bash(cat *),Bash(ls *)\"",
+                    "claude_args" to "--model claude-sonnet-4.6 --allowed-tools \"Write,Read,Bash(git *),Bash(cat *),Bash(ls *)\"",
+                    "show_full_output" to "true"
+                )
+            ),
+            env = linkedMapOf("ANTHROPIC_BASE_URL" to expr("secrets.ANTHROPIC_BASE_URL"))
+        )
+
+        // Fallback на GPT, если Sonnet недоступен
+        uses(
+            id = "review_gpt",
+            name = "Run Claude Code Review (GPT-5.5 Fallback)",
+            // только если первый шаг упал
+            condition = expr("steps.review_sonnet.outcome == 'failure'"),
+            action = CustomAction(
+                actionOwner = "anthropics",
+                actionName = "claude-code-action",
+                actionVersion = "v1",
+                inputs = linkedMapOf(
+                    "anthropic_api_key" to expr("secrets.ANTHROPIC_API_KEY"),
+                    "github_token" to expr("secrets.GITHUB_TOKEN"),
+                    "prompt" to expr("env.CLAUDE_PROMPT"),
+                    "claude_args" to "--model gpt-5.5 --allowed-tools \"Write,Read,Bash(git *),Bash(cat *),Bash(ls *)\"",
                     "show_full_output" to "true"
                 )
             ),
