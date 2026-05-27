@@ -4,7 +4,10 @@ package com.pavelryzh.firewallus.audit.event
 import com.pavelryzh.firewallus.audit.domain.AuditAction
 import com.pavelryzh.firewallus.audit.domain.AuditLog
 import com.pavelryzh.firewallus.audit.service.AuditLogService
+import com.pavelryzh.firewallus.blacklist.event.ManagedIpEvent
 import com.pavelryzh.firewallus.rule.event.RuleCacheEvent
+import com.pavelryzh.firewallus.settings.event.SettingsUpdatedEvent
+import com.pavelryzh.firewallus.user.event.AdminLoginEvent
 import org.springframework.context.event.EventListener
 import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Service
@@ -31,12 +34,56 @@ class AuditLogListener(
                 AuditLog(
                     adminId = event.adminId,
                     action = AuditAction.DELETE_RULE,
-                    ruleId = event.ruleId,
+                    ruleId = null,
                     ruleName = "Deleted Rule #${event.ruleId}"
                 )
             }
         }
 
+        auditLogService.save(auditLog)
+    }
+
+    @Async
+    @EventListener
+    fun onSettingsChanged(event: SettingsUpdatedEvent) {
+        val auditLog = AuditLog(
+            adminId = event.adminId,
+            action = AuditAction.UPDATE_SETTINGS,
+            ruleId = null,
+            ruleName = "Global WAF Settings" // TODO: использовать общие/базовые поля, не привязанные к домену правил
+        )
+        auditLogService.save(auditLog)
+    }
+
+    @Async
+    @EventListener
+    fun onAdminLogin(event: AdminLoginEvent) {
+        val auditLog = AuditLog(
+            adminId = event.adminId,
+            action = AuditAction.LOGIN,
+            ruleId = null,
+            ruleName = "User: ${event.username}"
+        )
+        auditLogService.save(auditLog)
+    }
+    @Async
+    @EventListener
+    fun onManagedIpChanged(event: ManagedIpEvent) {
+
+        val auditLog = when (event) {
+            is ManagedIpEvent.Added -> AuditLog(
+                adminId = event.adminId,
+                action = AuditAction.ADD_MANAGED_IP,
+                ruleId = null,
+                ruleName = "Added ${event.ipAddress} to ${event.listType}"
+            )
+            is ManagedIpEvent.Removed -> AuditLog(
+                adminId = event.adminId,
+                action = AuditAction.REMOVE_MANAGED_IP,
+                ruleId = null,
+                ruleName = "Removed ${event.ipAddress} from ${event.listType}"
+            )
+        }
         auditLogService.save(auditLog)
     }
 }

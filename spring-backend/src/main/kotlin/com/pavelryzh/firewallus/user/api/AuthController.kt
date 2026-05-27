@@ -1,4 +1,4 @@
-package com.pavelryzh.firewallus.user
+package com.pavelryzh.firewallus.user.api
 
 import com.pavelryzh.firewallus.user.service.AuthService
 import org.springframework.web.bind.annotation.RestController
