@@ -41,8 +41,7 @@ val myWorkflow = workflow(
         )
 
         // Анализ от клода
-        uses(
-            id = "review_sonnet",
+        val reviewSonnet = uses(
             name = "Run Claude Code Review (Sonnet)",
             continueOnError = true,
             action = CustomAction(
@@ -61,11 +60,10 @@ val myWorkflow = workflow(
         )
 
         // Fallback на GPT, если Sonnet недоступен
-        uses(
-            id = "review_gpt",
+        val reviewGpt = uses(
             name = "Run Claude Code Review (GPT-5.5 Fallback)",
             // только если первый шаг упал
-            condition = expr("steps.review_sonnet.outcome == 'failure'"),
+            condition = expr("steps.${reviewSonnet.id}.outcome == 'failure'"),
             action = CustomAction(
                 actionOwner = "anthropics",
                 actionName = "claude-code-action",
