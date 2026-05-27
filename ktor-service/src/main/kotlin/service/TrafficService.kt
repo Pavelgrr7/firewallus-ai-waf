@@ -66,6 +66,14 @@ class TrafficService(
         val identity = IdentityExtractor.extract(call)
         val ip = identity.ip
 
+        // Проверка белого списка -> проверка банов -> проверка rate limit -> проврка правил
+
+        val isWhitelisted = redisWafClient.isWhitelisted(identity.ip)
+        if (isWhitelisted) {
+            logger.debug("IP ${identity.ip} is whitelisted. Bypassing WAF.")
+            proxyToBackend(call)
+            return
+        }
         // Fail-Open: если Redis недоступен, разрешаем трафик (безопаснее, чем Fail-Closed)
         val isBanned = runCatching { redisWafClient.isClientBanned(identity) }
             .onFailure { logger.error("Redis is down, allowing traffic (Fail-Open)", it) }
@@ -80,15 +88,7 @@ class TrafficService(
             .getOrDefault(false) // Fail-Open
 
         if (isRateLimited) {
-            val incident = IncidentEventDto(
-                incidentType = "RATE_LIMIT_EXCEEDED",
-                attackerIp = ip,
-                targetUri = call.request.uri,
-                actionTaken = "BLOCK",
-                headersDump = extractTrafficLog(call).headers
-            )
-
-            serviceScope.launch { kafkaProducer.send("incidents", incident) }
+            sendIncidentEvent(identity.ip, call.request.uri, "RATE_LIMIT_EXCEEDED", "BLOCK", call)
 
             call.respond(HttpStatusCode.TooManyRequests, "Too Many Requests. WAF Rate Limit Exceeded.")
             return
@@ -99,14 +99,7 @@ class TrafficService(
         val trafficLog = extractTrafficLog(call)
 
         if (matchedRule != null) {
-            val incident = IncidentEventDto(
-                incidentType = matchedRule.name,
-                attackerIp = ip,
-                targetUri = call.request.uri,
-                actionTaken = matchedRule.action.name,
-                headersDump = trafficLog.headers
-            )
-            serviceScope.launch { kafkaProducer.send(TOPIC_INCIDENT, incident) }
+            sendIncidentEvent(identity.ip, call.request.uri, matchedRule.name, matchedRule.action.name, call)
 
             // Выполняем действие правила
             when (matchedRule.action) {
@@ -150,6 +143,19 @@ class TrafficService(
                 logger.error("ServiceScope shutdown timed out, forcing cancellation")
                 scopeJob.cancelChildren()
             }
+        }
+    }
+
+    private fun sendIncidentEvent(ip: String, uri: String, type: String, action: String, call: ApplicationCall) {
+        serviceScope.launch {
+            val incident = IncidentEventDto(
+                incidentType = type,
+                attackerIp = ip,
+                targetUri = uri,
+                actionTaken = action,
+                headersDump = extractTrafficLog(call).headers
+            )
+            kafkaProducer.send("incidents", incident)
         }
     }
 

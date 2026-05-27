@@ -24,7 +24,9 @@ class DefaultRulesSeeder(
 
     private val logger = LoggerFactory.getLogger(DefaultRulesSeeder::class.java)
 
-    override fun run(args: ApplicationArguments) {
+    override fun run(args: ApplicationArguments) = seed()
+
+    fun seed() {
         if (!seedDefaultRules) {
             logger.info("Сидинг дефолтных правил WAF отключен в конфигурации.")
             return
@@ -101,7 +103,8 @@ class DefaultRulesSeeder(
                     name = savedRule.name,
                     action = savedRule.action,
                     conditions = savedRule.conditions,
-                    isActive = savedRule.isActive
+                    isActive = savedRule.isActive,
+                    adminId = null
                 )
             )
         }
@@ -109,3 +112,4 @@ class DefaultRulesSeeder(
         logger.info("Успешно создано ${defaultRules.size} дефолтных правил защиты.")
     }
 }
+

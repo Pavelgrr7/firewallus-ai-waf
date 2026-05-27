@@ -50,4 +50,12 @@ class JwtTokenService(
             .payload
             .subject
     }
+
+    fun getClaimFromToken(token: String, claimName: String): String? {
+        return Jwts.parser()
+            .verifyWith(key)
+            .build()
+            .parseSignedClaims(token)
+            .payload.get(claimName, String::class.java)
+    }
 }

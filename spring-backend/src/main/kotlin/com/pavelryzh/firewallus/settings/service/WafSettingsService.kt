@@ -41,6 +41,10 @@ class WafSettingsService(
         updateDto.rateLimitRequests?.let { settings.rateLimitRequests = it }
         updateDto.rateLimitWindowSec?.let { settings.rateLimitWindowSec = it }
 
+        updateDto.tgBotToken?.let { settings.tgBotToken = it }
+        updateDto.tgChatId?.let { settings.tgChatId = it }
+        updateDto.alertThreshold?.let { settings.alertThreshold = it }
+
         eventPublisher.publishEvent(SettingsUpdatedEvent(settings))
 
         return settings

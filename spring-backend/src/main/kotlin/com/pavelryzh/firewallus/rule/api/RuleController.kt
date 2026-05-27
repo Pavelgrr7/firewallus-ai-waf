@@ -1,5 +1,6 @@
 package com.pavelryzh.firewallus.rule.api
 
+import com.pavelryzh.firewallus.infra.db.DefaultRulesSeeder
 import com.pavelryzh.firewallus.rule.service.RuleService
 import jakarta.validation.Valid
 import org.springframework.data.domain.Page
@@ -13,7 +14,8 @@ import org.springframework.web.bind.annotation.*
 @RequestMapping("/api/v1/rules")
 @PreAuthorize("hasRole('ADMIN')")
 class RuleController(
-    private val ruleService: RuleService
+    private val ruleService: RuleService,
+    private val defaultRulesSeederService: DefaultRulesSeeder
 ) {
 
     @GetMapping
@@ -65,4 +67,10 @@ class RuleController(
         return deactivatedRule.toDto()
     }
 
+
+    @PostMapping("/seed-defaults")
+    fun seedDefaultRules(): Map<String, String> {
+        defaultRulesSeederService.seed()
+        return mapOf("message" to "Default rules successfully created")
+    }
 }

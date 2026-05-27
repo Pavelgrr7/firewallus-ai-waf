@@ -1,5 +1,6 @@
 package com.pavelryzh.firewallus.infra.security
 
+import com.pavelryzh.firewallus.user.domain.AdminPrincipal
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
@@ -8,6 +9,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Component
 import org.springframework.web.filter.OncePerRequestFilter
+import java.util.UUID
 
 @Component
 class JwtFilter(
@@ -34,10 +36,23 @@ class JwtFilter(
             if (jwtTokenService.validateToken(token)) {
                 val username = jwtTokenService.getUsernameFromToken(token)
 
+                val adminIdStr = jwtTokenService.getClaimFromToken(token, "admin_id")
+                    ?: run {
+                        logger.warn("Token missing admin_id claim, rejecting")
+                        response.sendError(HttpServletResponse.SC_UNAUTHORIZED)
+                        return
+                    }
+                val adminId = runCatching { UUID.fromString(adminIdStr) }.getOrElse {
+                    logger.warn("Invalid admin_id in token: $adminIdStr")
+                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED)
+                    return
+                }
+
+                val principal = AdminPrincipal(id = adminId, username = username)
+
                 val authorities = listOf(SimpleGrantedAuthority("ROLE_ADMIN"))
 
-                val authentication = UsernamePasswordAuthenticationToken(username, null, authorities)
-
+                val authentication = UsernamePasswordAuthenticationToken(principal, null, authorities)
                 SecurityContextHolder.getContext().authentication = authentication
             }
         } catch (e: Exception) {
