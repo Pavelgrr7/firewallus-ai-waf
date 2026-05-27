@@ -5,6 +5,7 @@ import com.pavelryzh.firewallus.blacklist.domain.ManagedIp
 import com.pavelryzh.firewallus.blacklist.event.ManagedIpEvent
 import com.pavelryzh.firewallus.blacklist.port.ManagedIpRepository
 import com.pavelryzh.firewallus.rule.domain.IpAddress
+import jakarta.persistence.EntityNotFoundException
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
@@ -51,9 +52,10 @@ class ManagedIpService(
 
     @Transactional
     fun removeIpById(id: UUID) {
-        val ip = ipRepo.findById(id)
+        val ip = ipRepo.findById(id).orElseThrow {
+            EntityNotFoundException("ManagedIp not found: $id")
+        }
         ipRepo.deleteById(id)
-        eventPublisher.publishEvent(ManagedIpEvent.Removed(ip.get().ipAddress, ip.get().listType))
-
+        eventPublisher.publishEvent(ManagedIpEvent.Removed(ip.ipAddress, ip.listType))
     }
 }

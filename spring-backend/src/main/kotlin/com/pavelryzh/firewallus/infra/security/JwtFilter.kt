@@ -34,18 +34,19 @@ class JwtFilter(
 
         try {
             if (jwtTokenService.validateToken(token)) {
-//                val username = jwtTokenService.getUsernameFromToken(token)
-//
-//                val authorities = listOf(SimpleGrantedAuthority("ROLE_ADMIN"))
-//
-//                val authentication = UsernamePasswordAuthenticationToken(username, null, authorities)
-//
-//                SecurityContextHolder.getContext().authentication = authentication
-
                 val username = jwtTokenService.getUsernameFromToken(token)
 
                 val adminIdStr = jwtTokenService.getClaimFromToken(token, "admin_id")
-                val adminId = UUID.fromString(adminIdStr)
+                    ?: run {
+                        logger.warn("Token missing admin_id claim, rejecting")
+                        response.sendError(HttpServletResponse.SC_UNAUTHORIZED)
+                        return
+                    }
+                val adminId = runCatching { UUID.fromString(adminIdStr) }.getOrElse {
+                    logger.warn("Invalid admin_id in token: $adminIdStr")
+                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED)
+                    return
+                }
 
                 val principal = AdminPrincipal(id = adminId, username = username)
 

@@ -51,7 +51,7 @@ class JwtTokenService(
             .subject
     }
 
-    fun getClaimFromToken(token: String, claimName: String): String {
+    fun getClaimFromToken(token: String, claimName: String): String? {
         return Jwts.parser()
             .verifyWith(key)
             .build()
