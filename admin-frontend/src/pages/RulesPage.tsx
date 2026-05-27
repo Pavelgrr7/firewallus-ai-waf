@@ -24,6 +24,7 @@ import {
   disableRule,
   enableRule,
   getRules,
+  seedDefaultRules,
   updateRule,
   type Action,
   type Condition,
@@ -46,7 +47,7 @@ const ACTION_COLORS: Record<Action, string> = {
   LOG: 'text-accent-amber bg-accent-amber/10 border-accent-amber/30',
 };
 
-const EMPTY_CONDITION: Condition = { target: 'IP', targetKey: null, operator: 'EQUALS', value: '' };
+const EMPTY_CONDITION: Condition = { target: 'IP', target_key: null, operator: 'EQUALS', value: '' };
 
 const PAGE_SIZE = 10;
 
@@ -123,7 +124,7 @@ function ConditionRow({ cond, idx, onChange, onRemove, canRemove }: {
           <label className="block text-xs text-cyber-400 mb-1">Target</label>
           <select className={sel} value={cond.target} onChange={e => {
             const t = e.target.value as Target;
-            onChange(idx, { ...cond, target: t, targetKey: t === 'HEADER' ? (cond.targetKey ?? '') : null });
+            onChange(idx, { ...cond, target: t, target_key: t === 'HEADER' ? (cond.target_key ?? '') : null });
           }}>
             {TARGETS.map(t => <option key={t} value={t} className="bg-cyber-800">{t}</option>)}
           </select>
@@ -141,8 +142,8 @@ function ConditionRow({ cond, idx, onChange, onRemove, canRemove }: {
           <input
             className="w-full rounded-lg border border-cyber-500 bg-cyber-800/60 px-3 py-2 text-sm text-cyber-50 placeholder-cyber-500 focus:outline-none focus:ring-2 focus:ring-accent-blue/50 focus:border-accent-blue transition-all"
             placeholder="e.g. User-Agent"
-            value={cond.targetKey ?? ''}
-            onChange={e => onChange(idx, { ...cond, targetKey: e.target.value })}
+            value={cond.target_key ?? ''}
+            onChange={e => onChange(idx, { ...cond, target_key: e.target.value })}
           />
         </div>
       )}
@@ -187,7 +188,7 @@ function RuleModal({ rule, onClose, onSaved }: ModalProps) {
     const e: Record<string, string> = {};
     if (!name.trim()) e.name = 'Name is required';
     else if (name.length > 64) e.name = 'Max 64 characters';
-    if (conditions.some(c => !c.value.trim() || (c.target === 'HEADER' && !c.targetKey?.trim())))
+    if (conditions.some(c => !c.value.trim() || (c.target === 'HEADER' && !c.target_key?.trim())))
       e.conditions = 'All condition fields are required';
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -361,7 +362,23 @@ const RulesPage: React.FC = () => {
   // Toggle loading per-row
   const [toggling, setToggling] = useState<Set<number>>(new Set());
 
+  // Default seeding state
+  const [seedingDefaults, setSeedingDefaults] = useState(false);
+
   const showToast = (message: string, type: 'success' | 'error') => setToast({ message, type });
+
+  const handleSeedDefaults = async () => {
+    setSeedingDefaults(true);
+    try {
+      await seedDefaultRules();
+      showToast('Default rules successfully loaded.', 'success');
+      fetchRules(0);
+    } catch {
+      showToast('Failed to load default rules.', 'error');
+    } finally {
+      setSeedingDefaults(false);
+    }
+  };
 
   const fetchRules = useCallback(async (p: number, silent = false) => {
     if (!silent) setLoading(true);
@@ -428,7 +445,7 @@ const RulesPage: React.FC = () => {
     return (
       r.name.toLowerCase().includes(q) ||
       r.action.toLowerCase().includes(q) ||
-      r.conditions.some(c => c.value.toLowerCase().includes(q) || (c.targetKey ?? '').toLowerCase().includes(q))
+      r.conditions.some(c => c.value.toLowerCase().includes(q) || (c.target_key ?? '').toLowerCase().includes(q))
     );
   });
 
@@ -451,17 +468,28 @@ const RulesPage: React.FC = () => {
             <button
               id="rules-refresh-btn"
               onClick={() => fetchRules(page, true)}
-              disabled={refreshing || loading}
+              disabled={refreshing || loading || seedingDefaults}
               className="p-2 rounded-lg text-cyber-300 hover:text-white hover:bg-cyber-700 transition-all disabled:opacity-40"
               title="Refresh"
             >
               <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
             </button>
             <Button
+              id="rules-seed-btn"
+              variant="secondary"
+              size="sm"
+              onClick={handleSeedDefaults}
+              isLoading={seedingDefaults}
+              disabled={refreshing || loading}
+            >
+              Load Default Rules
+            </Button>
+            <Button
               id="rules-create-btn"
               variant="primary"
               size="sm"
               onClick={() => setCreateOpen(true)}
+              disabled={seedingDefaults}
             >
               <Plus size={16} className="mr-1.5" />
               New Rule
@@ -542,7 +570,7 @@ const RulesPage: React.FC = () => {
                         <div className="flex flex-col gap-1">
                           {rule.conditions.slice(0, 2).map((c, i) => (
                             <span key={i} className="text-xs font-mono text-cyber-300 bg-cyber-800/60 px-2 py-0.5 rounded-md truncate max-w-[220px] block">
-                              {c.target}{c.targetKey ? `:${c.targetKey}` : ''} {c.operator} {c.value}
+                              {c.target}{c.target_key ? `:${c.target_key}` : ''} {c.operator} {c.value}
                             </span>
                           ))}
                           {rule.conditions.length > 2 && (
