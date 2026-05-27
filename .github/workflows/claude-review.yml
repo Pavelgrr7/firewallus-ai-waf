@@ -30,7 +30,8 @@ jobs:
         echo "" >> $GITHUB_ENV
         echo "EOF" >> $GITHUB_ENV
     - id: 'step-2'
-      name: 'Run Claude Code Review'
+      name: 'Run Claude Code Review (Sonnet)'
+      continue-on-error: true
       uses: 'anthropics/claude-code-action@v1'
       with:
         anthropic_api_key: '${{ secrets.ANTHROPIC_API_KEY }}'
@@ -41,6 +42,18 @@ jobs:
       env:
         ANTHROPIC_BASE_URL: '${{ secrets.ANTHROPIC_BASE_URL }}'
     - id: 'step-3'
+      name: 'Run Claude Code Review (GPT-5.5 Fallback)'
+      uses: 'anthropics/claude-code-action@v1'
+      with:
+        anthropic_api_key: '${{ secrets.ANTHROPIC_API_KEY }}'
+        github_token: '${{ secrets.GITHUB_TOKEN }}'
+        prompt: '${{ env.CLAUDE_PROMPT }}'
+        claude_args: '--model gpt-5.5 --allowed-tools "Write,Read,Bash(git *),Bash(cat *),Bash(ls *)"'
+        show_full_output: 'true'
+      env:
+        ANTHROPIC_BASE_URL: '${{ secrets.ANTHROPIC_BASE_URL }}'
+      if: '${{ steps.step-2.outcome == ''failure'' }}'
+    - id: 'step-4'
       name: 'Publish Review to GitHub'
       env:
         PR_NUMBER: '${{ github.event.pull_request.number }}'
@@ -59,3 +72,4 @@ jobs:
         else
             gh pr review $PR_NUMBER --comment -F final_review.md
         fi
+      if: '${{ steps.step-2.outcome == ''success'' || steps.step-3.outcome == ''success'' }}'

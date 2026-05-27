@@ -89,6 +89,25 @@ services:
       - "3001:80"
     depends_on:
       - backend-spring
+
+  notification-service:
+    build: './notification-service'
+    environment:
+      - 'KAFKA_BOOTSTRAP_SERVERS=${DEFAULT_KAFKA}'
+      - 'TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}'
+      - 'TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}'
+      - 'ALERT_THRESHOLD=${ALERT_THRESHOLD:-50}'
+      - 'TIME_WINDOW_SEC=${TIME_WINDOW_SEC:-60}'
+      - 'COOLDOWN_SEC=${COOLDOWN_SEC:-300}'
+      - 'TELEGRAM_API_URL=${TELEGRAM_API_URL:-https://api.telegram.org}'
+      - 'HTTP_PROXY=${HTTP_PROXY:-}'
+      - 'HTTPS_PROXY=${HTTPS_PROXY:-}'
+    depends_on:
+      kafka:
+        condition: service_healthy
+    ports:
+      - "8002:8002"
+
   kafka:
     image: apache/kafka:latest
     container_name: kafka
