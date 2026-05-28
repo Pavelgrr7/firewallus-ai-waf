@@ -2,10 +2,20 @@ package com.pavelryzh.plugins.di
 
 import com.pavelryzh.core.WafRuleEngine
 import com.pavelryzh.kafka.KafkaTrafficProducer
+import com.pavelryzh.service.KtorHttpClient
+import com.pavelryzh.service.ProxyHttpClient
 import com.pavelryzh.service.RedisWafClient
 import com.pavelryzh.service.TrafficService
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.cio.CIO
+import io.ktor.client.plugins.HttpRequestRetry
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.*
+import kotlinx.serialization.json.Json
+import org.koin.dsl.bind
 import org.koin.dsl.module
+import org.koin.dsl.onClose
 import org.koin.ktor.plugin.Koin
 import org.koin.logger.slf4jLogger
 import org.slf4j.LoggerFactory
@@ -26,7 +36,22 @@ fun Application.configureDI() {
         single { WafRuleEngine() } onCloseWith lifecycleLogger
         single { RedisWafClient(redisUri) } onCloseWith lifecycleLogger
         single { KafkaTrafficProducer(bootstrapServers) } onCloseWith lifecycleLogger
-        single { TrafficService(get(), get(), get()) } onCloseWith lifecycleLogger
+        single { HttpClient(CIO) {
+            install(ContentNegotiation) {
+                json(
+                    Json {
+                        ignoreUnknownKeys = true
+                    }
+                )
+            }
+            install(HttpRequestRetry) {
+                retryOnServerErrors(maxRetries = 3)
+                retryOnException(maxRetries = 3, retryOnTimeout = true)
+                exponentialDelay()
+            }
+        }} onClose { it?.close() }
+        single { KtorHttpClient(get()) } onCloseWith lifecycleLogger bind ProxyHttpClient::class
+        single { TrafficService(get(), get(), get(), get()) } onCloseWith lifecycleLogger
     }
 
     install(Koin) {

@@ -22,7 +22,7 @@ const val BACKEND_TARGET_URL = "http://backend-spring:8080"
 
 class KtorHttpClient(
     private val httpClient: HttpClient,
-): ProxyHttpClient {
+): AutoCloseable, ProxyHttpClient {
 
     override suspend fun proxyToBackend(call: ApplicationCall, cachedBodyBytes: ByteArray?) {
 
@@ -66,5 +66,9 @@ class KtorHttpClient(
                 override fun readFrom() = bodyChannel
             }
         )
+    }
+
+    override fun close() {
+        httpClient.close()
     }
 }
