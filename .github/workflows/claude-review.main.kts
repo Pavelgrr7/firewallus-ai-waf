@@ -33,10 +33,10 @@ val myWorkflow = workflow(
         run(
             name = "Generate PR Diff",
             env = linkedMapOf(
-                "BASE_SHA" to expr("github.event.pull_request.base.sha"),
-                "HEAD_SHA" to expr("github.event.pull_request.head.sha")
+                "PR_NUMBER" to expr("github.event.pull_request.number"),
+                "GITHUB_TOKEN" to expr("secrets.GITHUB_TOKEN")
             ),
-            command = "git diff ${'$'}BASE_SHA ${'$'}HEAD_SHA > pr_diff.txt"
+            command = "gh pr diff ${'$'}PR_NUMBER > pr_diff.txt"
         )
 
         run(
@@ -62,7 +62,7 @@ val myWorkflow = workflow(
                     "anthropic_api_key" to expr("secrets.ANTHROPIC_API_KEY"),
                     "github_token" to expr("secrets.GITHUB_TOKEN"),
                     "prompt" to expr("env.CLAUDE_PROMPT"),
-                    "claude_args" to "--model claude-sonnet-4.6 --allowed-tools \"Write,Read\" --message-limit 15",
+                    "claude_args" to "--model claude-sonnet-4.6 --allowed-tools \"Write,Read\"",
                     "show_full_output" to "true"
                 )
             ),
@@ -71,6 +71,7 @@ val myWorkflow = workflow(
 
         // Fallback на GPT, если Sonnet недоступен
         // Важно: используется не стандартный api antropic, а сторонний провайдер, у которого модель gpt-5.4 есть
+
         val reviewGpt = uses(
             name = "Run Claude Code Review (GPT-5.4 Fallback)",
             continueOnError = true,
@@ -83,7 +84,7 @@ val myWorkflow = workflow(
                     "anthropic_api_key" to expr("secrets.ANTHROPIC_API_KEY"),
                     "github_token" to expr("secrets.GITHUB_TOKEN"),
                     "prompt" to expr("env.CLAUDE_PROMPT"),
-                    "claude_args" to "--model gpt-5.4 --allowed-tools \"Write,Read\" --message-limit 15",
+                    "claude_args" to "--model gpt-5.4 --allowed-tools \"Write,Read\"",
                     "show_full_output" to "true"
                 )
             ),

@@ -24,9 +24,9 @@ jobs:
     - id: 'step-1'
       name: 'Generate PR Diff'
       env:
-        BASE_SHA: '${{ github.event.pull_request.base.sha }}'
-        HEAD_SHA: '${{ github.event.pull_request.head.sha }}'
-      run: 'git diff $BASE_SHA $HEAD_SHA > pr_diff.txt'
+        PR_NUMBER: '${{ github.event.pull_request.number }}'
+        GITHUB_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
+      run: 'gh pr diff $PR_NUMBER > pr_diff.txt'
     - id: 'step-2'
       name: 'Load Prompt into Environment'
       run: |-
@@ -43,7 +43,7 @@ jobs:
         anthropic_api_key: '${{ secrets.ANTHROPIC_API_KEY }}'
         github_token: '${{ secrets.GITHUB_TOKEN }}'
         prompt: '${{ env.CLAUDE_PROMPT }}'
-        claude_args: '--model claude-sonnet-4.6 --allowed-tools "Write,Read" --message-limit 15'
+        claude_args: '--model claude-sonnet-4.6 --allowed-tools "Write,Read"'
         show_full_output: 'true'
       env:
         ANTHROPIC_BASE_URL: '${{ secrets.ANTHROPIC_BASE_URL }}'
@@ -55,7 +55,7 @@ jobs:
         anthropic_api_key: '${{ secrets.ANTHROPIC_API_KEY }}'
         github_token: '${{ secrets.GITHUB_TOKEN }}'
         prompt: '${{ env.CLAUDE_PROMPT }}'
-        claude_args: '--model gpt-5.4 --allowed-tools "Write,Read" --message-limit 15'
+        claude_args: '--model gpt-5.4 --allowed-tools "Write,Read"'
         show_full_output: 'true'
       env:
         ANTHROPIC_BASE_URL: '${{ secrets.ANTHROPIC_BASE_URL }}'
