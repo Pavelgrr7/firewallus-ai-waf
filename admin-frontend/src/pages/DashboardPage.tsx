@@ -47,34 +47,98 @@ const formatNumber = (n: number): string =>
 
 
 
+export interface TimelineDataPoint {
+  time: string;
+  count: number;
+  ml: number;
+  static: number;
+}
+
+const TIMELINE_POINTS = 30;
+
 /**
  * Group incidents by local-timezone **minute** bucket (HH:mm).
- * Using minutes instead of hours gives each recent incident its own X-axis
- * data point so the area chart draws a proper line rather than collapsing
- * everything into a single bar.
- *
- * `new Date(isoUtcString)` parses as UTC; `.getHours()` / `.getMinutes()`
- * return values in the browser's local timezone automatically.
+ * Returns fixed number of points (TIMELINE_POINTS) ending at current minute.
  */
-const buildTimelineData = (
-  incidents: IncidentResponseDto[]
-): { time: string; count: number }[] => {
-  const buckets: Record<string, number> = {};
+const initTimelineData = (
+  incidents: IncidentResponseDto[],
+  pointCount = TIMELINE_POINTS
+): TimelineDataPoint[] => {
+  const data: TimelineDataPoint[] = [];
+  const now = new Date();
 
-  for (const inc of incidents) {
-    if (!inc.timestamp) continue;
-    const d = new Date(inc.timestamp);
-    // "HH:mm" in local timezone — one bucket per minute
+  for (let i = pointCount - 1; i >= 0; i--) {
+    const d = new Date(now.getTime() - i * 60 * 1000);
     const key =
       `${String(d.getHours()).padStart(2, '0')}:` +
       `${String(d.getMinutes()).padStart(2, '0')}`;
-    buckets[key] = (buckets[key] ?? 0) + 1;
+
+    const matches = incidents.filter((inc) => {
+      if (!inc.timestamp) return false;
+      const incDate = new Date(inc.timestamp);
+      const incKey =
+        `${String(incDate.getHours()).padStart(2, '0')}:` +
+        `${String(incDate.getMinutes()).padStart(2, '0')}`;
+      return incKey === key;
+    });
+
+    const ml = matches.filter(
+      (inc) => inc.confidence_score !== null && inc.confidence_score !== undefined
+    ).length;
+    const staticD = matches.length - ml;
+
+    data.push({
+      time: key,
+      count: matches.length,
+      ml,
+      static: staticD,
+    });
   }
 
-  // Sort chronologically (lexicographic order works for "HH:mm" strings)
-  return Object.entries(buckets)
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([time, count]) => ({ time, count }));
+  return data;
+};
+
+/**
+ * Adds an incident to the timeline, creating or updating the bucket.
+ */
+const addIncidentToTimeline = (
+  prev: TimelineDataPoint[],
+  inc: IncidentResponseDto
+): TimelineDataPoint[] => {
+  if (!inc.timestamp) return prev;
+  const d = new Date(inc.timestamp);
+  const key =
+    `${String(d.getHours()).padStart(2, '0')}:` +
+    `${String(d.getMinutes()).padStart(2, '0')}`;
+
+  const isMl = inc.confidence_score !== null && inc.confidence_score !== undefined;
+
+  const idx = prev.findIndex((pt) => pt.time === key);
+  if (idx !== -1) {
+    return prev.map((pt, i) => {
+      if (i === idx) {
+        return {
+          ...pt,
+          count: pt.count + 1,
+          ml: pt.ml + (isMl ? 1 : 0),
+          static: pt.static + (isMl ? 0 : 1),
+        };
+      }
+      return pt;
+    });
+  } else {
+    const newPoint: TimelineDataPoint = {
+      time: key,
+      count: 1,
+      ml: isMl ? 1 : 0,
+      static: isMl ? 0 : 1,
+    };
+    const nextList = [...prev, newPoint];
+    if (nextList.length > TIMELINE_POINTS) {
+      nextList.shift();
+    }
+    return nextList;
+  }
 };
 
 /** Count occurrences of a string field */
@@ -212,8 +276,10 @@ const StreamBadge: React.FC<{ connected: boolean }> = ({ connected }) => (
 const DashboardPage: React.FC = () => {
   const [incidents, setIncidents] = useState<IncidentResponseDto[]>([]);
   const [activeRules, setActiveRules] = useState<number>(0);
+  const [timelineData, setTimelineData] = useState<TimelineDataPoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [sseConnected, setSseConnected] = useState(false);
+  const [totalBlockedRequests, setTotalBlockedRequests] = useState<number>(0);
 
   // Keep a stable ref to the AbortController so cleanup always cancels the
   // current connection even if React renders multiple times before unmount.
@@ -233,7 +299,9 @@ const DashboardPage: React.FC = () => {
         if (cancelled) return;
 
         setIncidents(incPage.content);
+        setTotalBlockedRequests(incPage.total_elements ?? 0);
         setActiveRules(rulesPage.content.filter((r) => r.is_active).length);
+        setTimelineData(initTimelineData(incPage.content, TIMELINE_POINTS));
       } catch (err) {
         console.error('[Dashboard] initial fetch failed', err);
       } finally {
@@ -255,6 +323,8 @@ const DashboardPage: React.FC = () => {
         setSseConnected(true);
         // Prepend the new incident so the dashboard updates in real-time.
         setIncidents((prev) => [newIncident, ...prev]);
+        setTotalBlockedRequests((prev) => prev + 1);
+        setTimelineData((prev) => addIncidentToTimeline(prev, newIncident));
       },
       onError: () => {
         setSseConnected(false);
@@ -278,8 +348,40 @@ const DashboardPage: React.FC = () => {
     };
   }, []); // Empty deps → runs once on mount, cleans up on unmount.
 
-  /* ── Derived chart data ── */
-  const timelineData = buildTimelineData(incidents);
+  /* ── Chart real-time progression ticking ── */
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTimelineData((prev) => {
+        if (prev.length === 0) return prev;
+        const now = new Date();
+        const key =
+          `${String(now.getHours()).padStart(2, '0')}:` +
+          `${String(now.getMinutes()).padStart(2, '0')}`;
+
+        // Check if the current minute is already the latest point in our timeline
+        const latestPoint = prev[prev.length - 1];
+        if (latestPoint && latestPoint.time === key) {
+          return prev;
+        }
+
+        // Otherwise, append a new minute point with 0 count
+        const newPoint: TimelineDataPoint = {
+          time: key,
+          count: 0,
+          ml: 0,
+          static: 0,
+        };
+
+        const nextList = [...prev, newPoint];
+        if (nextList.length > TIMELINE_POINTS) {
+          nextList.shift();
+        }
+        return nextList;
+      });
+    }, 10000); // Check every 10 seconds to keep chart scrolling live
+
+    return () => clearInterval(interval);
+  }, []);
 
   // Bug 1 fix: group by snake_case field incident_type
   const attackTypeData = topN(
@@ -321,8 +423,8 @@ const DashboardPage: React.FC = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
           <StatCard
             title="Blocked Requests"
-            value={formatNumber(incidents.length)}
-            subtitle="Last 200 incidents loaded"
+            value={formatNumber(totalBlockedRequests ?? 0)}
+            subtitle="Total blocked requests"
             icon={<ShieldOff size={22} />}
             accentColor="#f43f5e"
             delay={0}

@@ -1,4 +1,4 @@
-package com.pavelryzh.firewallus.user
+package com.pavelryzh.firewallus.user.ports
 
 import com.pavelryzh.firewallus.user.domain.Admin
 import org.springframework.data.jpa.repository.JpaRepository

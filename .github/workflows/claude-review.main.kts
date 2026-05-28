@@ -60,9 +60,9 @@ val myWorkflow = workflow(
         )
 
         // Fallback на GPT, если Sonnet недоступен
-        // Важно: используется не стандартный api antropic, а сторонний провайдер, у которого модель gpt-5.5 есть
+        // Важно: используется не стандартный api antropic, а сторонний провайдер, у которого модель gpt-5.4 есть
         val reviewGpt = uses(
-            name = "Run Claude Code Review (GPT-5.5 Fallback)",
+            name = "Run Claude Code Review (GPT-5.4 Fallback)",
             // только если первый шаг упал
             condition = expr("steps.${reviewSonnet.id}.outcome == 'failure'"),
             action = CustomAction(
@@ -73,7 +73,7 @@ val myWorkflow = workflow(
                     "anthropic_api_key" to expr("secrets.ANTHROPIC_API_KEY"),
                     "github_token" to expr("secrets.GITHUB_TOKEN"),
                     "prompt" to expr("env.CLAUDE_PROMPT"),
-                    "claude_args" to "--model gpt-5.5 --allowed-tools \"Write,Read,Bash(git *),Bash(cat *),Bash(ls *)\"",
+                    "claude_args" to "--model gpt-5.4 --allowed-tools \"Write,Read,Bash(git *),Bash(cat *),Bash(ls *)\"",
                     "show_full_output" to "true"
                 )
             ),

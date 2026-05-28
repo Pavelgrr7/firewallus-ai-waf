@@ -1,4 +1,4 @@
-package com.pavelryzh.firewallus.user
+package com.pavelryzh.firewallus.user.api
 
 import jakarta.validation.constraints.NotBlank
 

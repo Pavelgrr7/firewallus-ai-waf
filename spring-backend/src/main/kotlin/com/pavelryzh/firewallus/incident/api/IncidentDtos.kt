@@ -46,6 +46,6 @@ fun Incident.toDto(): IncidentResponseDto {
         targetUri = targetUri,
         actionTaken = actionTaken,
         confidenceScore = confidenceScore,
-        timestamp = timestamp
+        timestamp = timestamp ?: Instant.now()
     )
 }

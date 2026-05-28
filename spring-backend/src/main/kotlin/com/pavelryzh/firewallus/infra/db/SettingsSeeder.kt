@@ -36,7 +36,7 @@ class WafSettingsSeeder(
 
             settingsRepository.save(settings)
 
-            eventPublisher.publishEvent(SettingsUpdatedEvent(settings))
+            eventPublisher.publishEvent(SettingsUpdatedEvent(settings, null))
 
             logger.info("Настройки WAF установлены по умолчанию (Limit: $defaultRequests / ${defaultWindow}s).")
         }

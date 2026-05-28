@@ -11,7 +11,7 @@ export type Operator = 'EQUALS' | 'CONTAINS' | 'REGEX';
 export interface Condition {
   target: Target;
   /** Only populated when target === 'HEADER' */
-  targetKey?: string | null;
+  target_key?: string | null;
   operator: Operator;
   value: string;
 }
@@ -41,8 +41,8 @@ export interface UpdateRuleDto {
 
 export interface Page<T> {
   content: T[];
-  totalElements: number;
-  totalPages: number;
+  total_elements: number;
+  total_pages: number;
   number: number; // current page (0-indexed)
   size: number;
 }
@@ -78,3 +78,7 @@ export const enableRule = (id: number): Promise<RuleResponseDto> =>
 /** POST /api/v1/rules/:id/disable */
 export const disableRule = (id: number): Promise<RuleResponseDto> =>
   api.post<RuleResponseDto>(`${BASE}/${id}/disable`).then((r) => r.data);
+
+/** POST /api/v1/rules/seed-defaults */
+export const seedDefaultRules = (): Promise<{ message: string }> =>
+  api.post<{ message: string }>(`${BASE}/seed-defaults`).then((r) => r.data);

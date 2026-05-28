@@ -42,13 +42,13 @@ jobs:
       env:
         ANTHROPIC_BASE_URL: '${{ secrets.ANTHROPIC_BASE_URL }}'
     - id: 'step-3'
-      name: 'Run Claude Code Review (GPT-5.5 Fallback)'
+      name: 'Run Claude Code Review (GPT-5.4 Fallback)'
       uses: 'anthropics/claude-code-action@v1'
       with:
         anthropic_api_key: '${{ secrets.ANTHROPIC_API_KEY }}'
         github_token: '${{ secrets.GITHUB_TOKEN }}'
         prompt: '${{ env.CLAUDE_PROMPT }}'
-        claude_args: '--model gpt-5.5 --allowed-tools "Write,Read,Bash(git *),Bash(cat *),Bash(ls *)"'
+        claude_args: '--model gpt-5.4 --allowed-tools "Write,Read,Bash(git *),Bash(cat *),Bash(ls *)"'
         show_full_output: 'true'
       env:
         ANTHROPIC_BASE_URL: '${{ secrets.ANTHROPIC_BASE_URL }}'
