@@ -1,6 +1,7 @@
 package com.pavelryzh.service
 
 import com.pavelryzh.core.IdentityExtractor
+import com.pavelryzh.core.WAF_PAYLOAD_LIMIT_BYTES
 import com.pavelryzh.core.WafRuleEngine
 import com.pavelryzh.kafka.KafkaTrafficProducer
 import com.pavelryzh.model.Action
@@ -10,25 +11,34 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import com.pavelryzh.plugins.logger
-import com.pavelryzh.routes.extractTrafficLog
+import com.pavelryzh.core.extractTrafficLog
 import com.pavelryzh.model.GlobalSettings
+import com.pavelryzh.service.dto.HttpMethod
 import com.pavelryzh.service.dto.IncidentEventDto
+import com.pavelryzh.service.dto.parseMethod
+import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.ApplicationCall
+import io.ktor.server.request.httpMethod
+import io.ktor.server.request.receiveChannel
+import io.ktor.server.request.receiveText
 import io.ktor.server.request.uri
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondText
+import io.ktor.utils.io.readRemaining
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.io.readByteArray
 
 class TrafficService(
     private val kafkaProducer: KafkaTrafficProducer,
     private val redisWafClient: RedisWafClient,
-    private val ruleEngine: WafRuleEngine
+    private val ruleEngine: WafRuleEngine,
+    private val httpClient: ProxyHttpClient,
     ) : AutoCloseable {
 
     private val logger = logger()
@@ -71,7 +81,7 @@ class TrafficService(
         val isWhitelisted = redisWafClient.isWhitelisted(identity.ip)
         if (isWhitelisted) {
             logger.debug("IP ${identity.ip} is whitelisted. Bypassing WAF.")
-            proxyToBackend(call)
+            proxyToBackend(call, null)
             return
         }
         // Fail-Open: если Redis недоступен, разрешаем трафик (безопаснее, чем Fail-Closed)
@@ -94,9 +104,12 @@ class TrafficService(
             return
         }
 
-        val matchedRule = ruleEngine.evaluate(call, activeRules)
+        val cachedBodyBytes = readCallBody(call)
+        val cachedBodyString = cachedBodyBytes?.let { String(it, Charsets.UTF_8) }
 
-        val trafficLog = extractTrafficLog(call)
+        val matchedRule = ruleEngine.evaluate(call,  cachedBodyString, activeRules)
+
+        val trafficLog = extractTrafficLog(call, cachedBodyString)
 
         if (matchedRule != null) {
             sendIncidentEvent(identity.ip, call.request.uri, matchedRule.name, matchedRule.action.name, call)
@@ -112,7 +125,7 @@ class TrafficService(
                 }
                 Action.ALLOW -> {
                     logger.info("Rule ${matchedRule.name} matched in ALLOW mode for IP $ip")
-                    proxyToBackend(call)
+                    proxyToBackend(call, cachedBodyBytes)
                     return
                 }
             }
@@ -124,26 +137,11 @@ class TrafficService(
 
             )
         }
-        proxyToBackend(call)
+        proxyToBackend(call, cachedBodyBytes)
     }
 
-    private suspend fun proxyToBackend(call: ApplicationCall) {
-        // todo
-        // делаем запрос к реальному микросервису
-        // и возвращаем его ответ в наш call.
-        call.respondText("WAF passed. Simulating backend response.")
-    }
-
-    override fun close() {
-        runBlocking {
-            scopeJob.cancel()
-            withTimeoutOrNull(5000) {
-                scopeJob.join()
-            } ?: run {
-                logger.error("ServiceScope shutdown timed out, forcing cancellation")
-                scopeJob.cancelChildren()
-            }
-        }
+    private suspend fun proxyToBackend(call: ApplicationCall, body: ByteArray?) {
+        httpClient.proxyToBackend(call, body)
     }
 
     private fun sendIncidentEvent(ip: String, uri: String, type: String, action: String, call: ApplicationCall) {
@@ -155,7 +153,38 @@ class TrafficService(
                 actionTaken = action,
                 headersDump = extractTrafficLog(call).headers
             )
-            kafkaProducer.send("incidents", incident)
+            kafkaProducer.send(TOPIC_INCIDENT, incident)
+        }
+    }
+
+    private suspend fun readCallBody(call: ApplicationCall): ByteArray? {
+
+        val contentLength = call.request.headers[HttpHeaders.ContentLength]?.toIntOrNull()
+        var cachedBodyBytes: ByteArray? = null
+
+        val method = parseMethod(call.request.httpMethod.value)
+        if (method == HttpMethod.POST || method == HttpMethod.PUT || method == HttpMethod.PATCH) {
+            if (contentLength != null && contentLength <= WAF_PAYLOAD_LIMIT_BYTES) {
+                cachedBodyBytes = call.receiveChannel().readRemaining().readByteArray()
+            } else if (contentLength == null) {
+                logger.warn("Chunked or missing Content-Length. Skipping payload inspection.")
+            } else {
+                logger.info("Payload too large ($contentLength bytes). Skipping WAF inspection.")
+            }
+        }
+
+        return cachedBodyBytes
+    }
+
+    override fun close() {
+        runBlocking {
+            scopeJob.cancel()
+            withTimeoutOrNull(5000) {
+                scopeJob.join()
+            } ?: run {
+                logger.error("ServiceScope shutdown timed out, forcing cancellation")
+                scopeJob.cancelChildren()
+            }
         }
     }
 

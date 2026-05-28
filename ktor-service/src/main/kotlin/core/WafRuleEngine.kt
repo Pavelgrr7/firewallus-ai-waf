@@ -13,22 +13,24 @@ import io.ktor.server.request.uri
 class WafRuleEngine : AutoCloseable {
 
     // Оценивает запрос. Возвращает сработавшее правило (если есть), иначе null.
-    fun evaluate(call: ApplicationCall, activeRules: List<WafRule>): WafRule? {
+    fun evaluate(call: ApplicationCall, cachedBodyString: String?, activeRules: List<WafRule>): WafRule? {
         for (rule in activeRules) {
             val isMatch = rule.conditions.all { condition ->
-                checkCondition(call, condition)
+                checkCondition(call, cachedBodyString, condition)
             }
             if (isMatch) return rule
         }
         return null
     }
 
-    private fun checkCondition(call: ApplicationCall, cond: Condition): Boolean {
+    private fun checkCondition(call: ApplicationCall, cachedBodyString: String?, cond: Condition): Boolean {
         val actualValue = when (cond.target) {
             Target.IP -> call.request.origin.remoteHost
             Target.URI -> normalizePayload(call.request.uri)
             Target.METHOD -> call.request.httpMethod.value
             Target.HEADER -> normalizePayload(call.request.headers[cond.targetKey ?: ""] ?: "")
+            Target.BODY -> normalizePayload(cachedBodyString ?: "")
+
         }
 
         return runCatching {

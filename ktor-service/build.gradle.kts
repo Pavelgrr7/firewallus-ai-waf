@@ -35,6 +35,9 @@ dependencies {
     implementation(libs.logback.classic)
     implementation(libs.ktor.server.config.yaml)
     implementation("io.lettuce:lettuce-core:6.3.2.RELEASE")
+    implementation("io.ktor:ktor-client-core:3.4.0")
+    implementation("io.ktor:ktor-client-cio:3.4.0")
+    implementation("io.ktor:ktor-client-content-negotiation:3.4.0")
 
     gatlingImplementation("io.gatling.highcharts:gatling-charts-highcharts:3.11.5")
 
