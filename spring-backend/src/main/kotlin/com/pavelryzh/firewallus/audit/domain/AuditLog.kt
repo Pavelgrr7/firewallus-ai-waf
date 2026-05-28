@@ -3,11 +3,23 @@ package com.pavelryzh.firewallus.audit.domain
 
 import jakarta.persistence.*
 import org.hibernate.annotations.CreationTimestamp
+import org.hibernate.annotations.JdbcTypeCode
+import org.hibernate.type.SqlTypes
 import java.time.Instant
 import java.util.UUID
 
 enum class AuditAction {
-    CREATE_RULE, UPDATE_RULE, DELETE_RULE, ENABLE_RULE, DISABLE_RULE, LOGIN
+    // Правила
+    CREATE_RULE, UPDATE_RULE, DELETE_RULE, ENABLE_RULE, DISABLE_RULE, SEED_DEFAULT_RULES,
+
+    // Списки доступа
+    ADD_MANAGED_IP, REMOVE_MANAGED_IP,
+
+    // Настройки
+    UPDATE_SETTINGS,
+
+    // Авторизация и пользователи
+    LOGIN, CREATE_ADMIN, DELETE_ADMIN, CHANGE_PASSWORD
 }
 
 @Entity
@@ -17,6 +29,7 @@ class AuditLog(
     var adminId: UUID?,
 
     @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     @Column(name = "action", nullable = false)
     var action: AuditAction,
 

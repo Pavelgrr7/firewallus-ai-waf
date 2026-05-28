@@ -7,6 +7,8 @@ import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import RulesPage from './pages/RulesPage';
 import SettingsPage from './pages/SettingsPage';
+import AccessControlPage from './pages/AccessControlPage';
+import AuditLogsPage from './pages/AuditLogsPage';
 
 /**
  * App — root component with routing and auth context.
@@ -29,6 +31,8 @@ const App: React.FC = () => {
           >
             <Route path="/" element={<DashboardPage />} />
             <Route path="/rules" element={<RulesPage />} />
+            <Route path="/access-control" element={<AccessControlPage />} />
+            <Route path="/audit-logs" element={<AuditLogsPage />} />
             <Route path="/settings" element={<SettingsPage />} />
           </Route>
         </Routes>

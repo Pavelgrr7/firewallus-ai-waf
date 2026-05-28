@@ -4,6 +4,7 @@ import com.pavelryzh.firewallus.blacklist.domain.IpListType
 import com.pavelryzh.firewallus.blacklist.domain.ManagedIp
 import com.pavelryzh.firewallus.blacklist.event.ManagedIpEvent
 import com.pavelryzh.firewallus.blacklist.port.ManagedIpRepository
+import com.pavelryzh.firewallus.infra.security.CurrentAdminProvider
 import com.pavelryzh.firewallus.rule.domain.IpAddress
 import jakarta.persistence.EntityNotFoundException
 import org.springframework.context.ApplicationEventPublisher
@@ -17,8 +18,9 @@ import java.util.*
 @Service
 class ManagedIpService(
     private val ipRepo: ManagedIpRepository,
-    private val eventPublisher: ApplicationEventPublisher
-) {
+    private val eventPublisher: ApplicationEventPublisher,
+    private val currentAdminProvider: CurrentAdminProvider,
+    ) {
 
     @Transactional(readOnly = true)
     fun getIps(listType: IpListType?, pageable: Pageable): Page<ManagedIp> {
@@ -44,8 +46,10 @@ class ManagedIpService(
         )
         val saved = ipRepo.save(newIp)
 
+        val adminId = currentAdminProvider.getCurrentAdminId()
+
         // Кидаем событие, чтобы Redis добавил этот IP в кэш!
-        eventPublisher.publishEvent(ManagedIpEvent.Added(saved))
+        eventPublisher.publishEvent(ManagedIpEvent.Added(saved, adminId))
 
         return saved
     }
@@ -55,7 +59,9 @@ class ManagedIpService(
         val ip = ipRepo.findById(id).orElseThrow {
             EntityNotFoundException("ManagedIp not found: $id")
         }
+        val adminId = currentAdminProvider.getCurrentAdminId()
+
         ipRepo.deleteById(id)
-        eventPublisher.publishEvent(ManagedIpEvent.Removed(ip.ipAddress, ip.listType))
+        eventPublisher.publishEvent(ManagedIpEvent.Removed(ip.ipAddress, ip.listType, adminId))
     }
 }

@@ -1,6 +1,6 @@
 package com.pavelryzh.firewallus.infra.db
 
-import com.pavelryzh.firewallus.user.AdminRepository
+import com.pavelryzh.firewallus.user.ports.AdminRepository
 import com.pavelryzh.firewallus.user.domain.Admin
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value

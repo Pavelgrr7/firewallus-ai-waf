@@ -2,6 +2,8 @@ package com.pavelryzh.firewallus.blacklist.domain
 
 import jakarta.persistence.*
 import org.hibernate.annotations.CreationTimestamp
+import org.hibernate.annotations.JdbcTypeCode
+import org.hibernate.type.SqlTypes
 import java.time.Instant
 import java.util.UUID
 
@@ -14,6 +16,7 @@ class ManagedIp(
     var ipAddress: String,
 
     @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     @Column(name = "list_type", nullable = false)
     var listType: IpListType,
 

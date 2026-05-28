@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Shield, Settings, ShieldCheck } from 'lucide-react';
+import { LayoutDashboard, Shield, Settings, ShieldCheck, Lock, History } from 'lucide-react';
 
 interface NavItem {
   label: string;
@@ -12,7 +12,9 @@ interface NavItem {
 const navItems: NavItem[] = [
   { label: 'Dashboard', path: '/', icon: <LayoutDashboard size={20} /> },
   { label: 'Rule Management', path: '/rules', icon: <Shield size={20} /> },
-  { label: 'Settings', path: '/settings', icon: <Settings size={20} />, badge: 'Soon' },
+  { label: 'Access Control', path: '/access-control', icon: <Lock size={20} /> },
+  { label: 'Audit Logs', path: '/audit-logs', icon: <History size={20} /> },
+  { label: 'Settings', path: '/settings', icon: <Settings size={20} /> },
 ];
 
 /**

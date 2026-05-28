@@ -1,6 +1,7 @@
 package com.pavelryzh.firewallus.settings.service
 
 import com.pavelryzh.firewallus.exception.ResourceNotFoundException
+import com.pavelryzh.firewallus.infra.security.CurrentAdminProvider
 import com.pavelryzh.firewallus.settings.api.UpdateSettingsDto
 import com.pavelryzh.firewallus.settings.domain.WafSettings
 import com.pavelryzh.firewallus.settings.event.SettingsUpdatedEvent
@@ -12,9 +13,10 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 class WafSettingsService(
     private val settingsRepo: WafSettingsRepository,
-    private val eventPublisher: ApplicationEventPublisher
+    private val eventPublisher: ApplicationEventPublisher,
+    private val currentAdminProvider: CurrentAdminProvider,
 
-) {
+    ) {
     companion object {
         private const val SETTINGS_ID = 1
     }
@@ -24,7 +26,9 @@ class WafSettingsService(
         wafSettings.id = SETTINGS_ID
         val saved = settingsRepo.save(wafSettings)
 
-        eventPublisher.publishEvent(SettingsUpdatedEvent(saved))
+        val adminId = currentAdminProvider.getCurrentAdminId()
+
+        eventPublisher.publishEvent(SettingsUpdatedEvent(saved, adminId))
 
         return saved
     }
@@ -44,8 +48,9 @@ class WafSettingsService(
         updateDto.tgBotToken?.let { settings.tgBotToken = it }
         updateDto.tgChatId?.let { settings.tgChatId = it }
         updateDto.alertThreshold?.let { settings.alertThreshold = it }
+        val adminId = currentAdminProvider.getCurrentAdminId()
 
-        eventPublisher.publishEvent(SettingsUpdatedEvent(settings))
+        eventPublisher.publishEvent(SettingsUpdatedEvent(settings, adminId))
 
         return settings
     }

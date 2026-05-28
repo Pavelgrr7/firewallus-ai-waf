@@ -1,5 +1,6 @@
 package com.pavelryzh.firewallus.infra.security
 
+import jakarta.servlet.DispatcherType
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity
@@ -32,6 +33,7 @@ class SecurityConfig(private val jwtFilter: JwtFilter) {
             .cors { it.configurationSource(corsConfigurationSource()) }
             .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
             .authorizeHttpRequests { auth ->
+                auth.dispatcherTypeMatchers(DispatcherType.ASYNC).permitAll()
                 auth.requestMatchers("/api/v1/auth/login").permitAll()
 
                 auth.anyRequest().authenticated()
@@ -44,7 +46,10 @@ class SecurityConfig(private val jwtFilter: JwtFilter) {
     @Bean
     fun corsConfigurationSource(): CorsConfigurationSource {
         val configuration = CorsConfiguration()
-        configuration.allowedOrigins = listOf("http://localhost:5173", "http://localhost:3000", "http://localhost:3001")
+        configuration.allowedOrigins = listOf(
+            "http://localhost:5173", "http://localhost:3000", "http://localhost:3001",
+            "http://127.0.0.1:5173", "http://127.0.0.1:3000", "http://127.0.0.1:3001"
+        )
         configuration.allowedMethods = listOf("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
         configuration.allowedHeaders = listOf("*")
         configuration.allowCredentials = true
