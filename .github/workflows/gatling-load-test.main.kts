@@ -25,7 +25,7 @@ val myWorkflow = workflow(
         Push(branches = listOf("main")),
         WorkflowDispatch()
     ),
-    sourceFile = java.nio.file.Paths.get("gatling-load-test.main.kts").toAbsolutePath()
+    sourceFile = __FILE__.toPath().toAbsolutePath()
 ) {
     job(
         id = "run-gatling",
@@ -75,7 +75,7 @@ val myWorkflow = workflow(
 
         run(
             name = "Run Gatling Tests",
-            command = "cd ktor-service && chmod +x gradlew && ./gradlew gatlingRun --no-daemon"
+            command = "cd ktor-service && chmod +x gradlew && ./gradlew gatlingRun --no-daemon -Dorg.gradle.jvmargs=\\\"-Xmx512m\\"
         )
 
         uses(
