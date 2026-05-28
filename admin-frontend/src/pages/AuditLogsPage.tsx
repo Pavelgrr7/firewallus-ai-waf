@@ -1,26 +1,20 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React from 'react';
 import {
-  History,
-  Loader2,
-  ChevronLeft,
-  ChevronRight,
-  RefreshCw,
-  User,
   Calendar,
+  History,
   Layers,
-  Search
+  Loader2,
+  RefreshCw,
+  Search,
+  User,
 } from 'lucide-react';
 import Header from '../components/layout/Header';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
-import {
-  getAuditLogs,
-  type AuditAction,
-  type AuditLogResponseDto
-} from '../services/auditLogService';
-
-const PAGE_SIZE = 20;
+import Pagination from '../components/ui/Pagination';
+import { useAuditLogs } from '../hooks/useAuditLogs';
+import type { AuditAction } from '../services/auditLogService';
 
 const ACTION_BADGES: Record<AuditAction, string> = {
   CREATE_RULE: 'text-accent-emerald bg-accent-emerald/10 border-accent-emerald/30',
@@ -32,46 +26,18 @@ const ACTION_BADGES: Record<AuditAction, string> = {
 };
 
 const AuditLogsPage: React.FC = () => {
-  const [logs, setLogs] = useState<AuditLogResponseDto[]>([]);
-  const [totalPages, setTotalPages] = useState(0);
-  const [totalElements, setTotalElements] = useState(0);
-  const [page, setPage] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [search, setSearch] = useState('');
-  const [error, setError] = useState('');
-
-  const fetchLogs = useCallback(async (p: number, silent = false) => {
-    if (!silent) setLoading(true);
-    else setRefreshing(true);
-    setError('');
-    try {
-      const data = await getAuditLogs(p, PAGE_SIZE);
-      setLogs(data.content);
-      setTotalPages(data.total_pages ?? 0);
-      setTotalElements(data.total_elements ?? 0);
-      setPage(data.number);
-    } catch {
-      setError('Failed to fetch administrator audit logs.');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchLogs(0);
-  }, [fetchLogs]);
-
-  // Client-side filtering within the current page
-  const filtered = logs.filter((log) => {
-    const q = search.toLowerCase();
-    return (
-      log.rule_name.toLowerCase().includes(q) ||
-      log.action.toLowerCase().includes(q) ||
-      (log.admin_id ?? '').toLowerCase().includes(q)
-    );
-  });
+  const {
+    logs,
+    totalPages,
+    totalElements,
+    page,
+    loading,
+    refreshing,
+    search,
+    setSearch,
+    error,
+    fetchLogs,
+  } = useAuditLogs();
 
   return (
     <div className="min-h-screen">
@@ -125,7 +91,7 @@ const AuditLogsPage: React.FC = () => {
                 Retry
               </Button>
             </div>
-          ) : filtered.length === 0 ? (
+          ) : logs.length === 0 ? (
             <div className="text-center py-24">
               <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-cyber-800 flex items-center justify-center">
                 <History size={28} className="text-cyber-400" />
@@ -142,21 +108,30 @@ const AuditLogsPage: React.FC = () => {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-glass-border">
-                    <th className="text-left px-5 py-3.5 text-xs font-semibold text-cyber-300 uppercase tracking-wider">Action Type</th>
-                    <th className="text-left px-5 py-3.5 text-xs font-semibold text-cyber-300 uppercase tracking-wider">Target Rule</th>
-                    <th className="text-left px-5 py-3.5 text-xs font-semibold text-cyber-300 uppercase tracking-wider">Admin ID</th>
-                    <th className="text-left px-5 py-3.5 text-xs font-semibold text-cyber-300 uppercase tracking-wider hidden md:table-cell">Timestamp</th>
+                    <th className="text-left px-5 py-3.5 text-xs font-semibold text-cyber-300 uppercase tracking-wider">
+                      Action Type
+                    </th>
+                    <th className="text-left px-5 py-3.5 text-xs font-semibold text-cyber-300 uppercase tracking-wider">
+                      Target Rule
+                    </th>
+                    <th className="text-left px-5 py-3.5 text-xs font-semibold text-cyber-300 uppercase tracking-wider">
+                      Admin ID
+                    </th>
+                    <th className="text-left px-5 py-3.5 text-xs font-semibold text-cyber-300 uppercase tracking-wider hidden md:table-cell">
+                      Timestamp
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-glass-border/50">
-                  {filtered.map((log) => (
+                  {logs.map((log) => (
                     <tr
                       key={log.id}
                       className="hover:bg-cyber-700/20 transition-colors duration-150"
                     >
                       {/* Action Badge */}
                       <td className="px-5 py-4">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border uppercase tracking-wider
+                        <span
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border uppercase tracking-wider
                           ${ACTION_BADGES[log.action] ?? 'text-cyber-200 bg-cyber-700/40 border-cyber-500/30'}`}
                         >
                           {log.action.replace('_', ' ')}
@@ -188,11 +163,7 @@ const AuditLogsPage: React.FC = () => {
                       <td className="px-5 py-4 text-cyber-300 hidden md:table-cell">
                         <div className="flex items-center gap-2">
                           <Calendar size={13} className="text-cyber-400 shrink-0" />
-                          <span>
-                            {log.timestamp
-                              ? new Date(log.timestamp).toLocaleString()
-                              : 'Unknown'}
-                          </span>
+                          <span>{log.timestamp ? new Date(log.timestamp).toLocaleString() : 'Unknown'}</span>
                         </div>
                       </td>
                     </tr>
@@ -202,50 +173,14 @@ const AuditLogsPage: React.FC = () => {
             </div>
           )}
 
-          {/* Pagination Footer */}
-          {!loading && totalPages > 1 && (
-            <div className="flex items-center justify-between px-5 py-3.5 border-t border-glass-border">
-              <span className="text-xs text-cyber-400 font-medium">
-                Page {page + 1} of {totalPages}
-              </span>
-              <div className="flex items-center gap-1">
-                <button
-                  id="audit-prev-page"
-                  onClick={() => fetchLogs(page - 1)}
-                  disabled={page === 0 || loading}
-                  className="p-1.5 rounded-md text-cyber-300 hover:text-white hover:bg-cyber-700 transition-all disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
-                >
-                  <ChevronLeft size={16} />
-                </button>
-                {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
-                  const p0 = Math.max(0, Math.min(page - 2, totalPages - 5));
-                  const idx = p0 + i;
-                  return (
-                    <button
-                      key={idx}
-                      id={`audit-page-${idx}`}
-                      onClick={() => fetchLogs(idx)}
-                      className={`w-7 h-7 rounded-md text-xs font-semibold transition-all cursor-pointer
-                        ${idx === page
-                          ? 'bg-accent-blue text-white shadow-md shadow-accent-blue/20'
-                          : 'text-cyber-300 hover:text-white hover:bg-cyber-700'
-                        }`}
-                    >
-                      {idx + 1}
-                    </button>
-                  );
-                })}
-                <button
-                  id="audit-next-page"
-                  onClick={() => fetchLogs(page + 1)}
-                  disabled={page >= totalPages - 1 || loading}
-                  className="p-1.5 rounded-md text-cyber-300 hover:text-white hover:bg-cyber-700 transition-all disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
-                >
-                  <ChevronRight size={16} />
-                </button>
-              </div>
-            </div>
-          )}
+          {/* Pagination */}
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            onPageChange={(p) => fetchLogs(p)}
+            loading={loading}
+            idPrefix="audit"
+          />
         </Card>
       </div>
     </div>

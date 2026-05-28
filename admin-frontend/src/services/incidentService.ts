@@ -38,6 +38,8 @@ export const getIncidents = (
 export interface SseOptions {
   onIncident: (incident: IncidentResponseDto) => void;
   onError?: (err: unknown) => void;
+  onOpen?: (res: Response) => void;
+  onClose?: () => void;
 }
 
 /**
@@ -50,7 +52,7 @@ export interface SseOptions {
  * (e.g. in a useEffect return function) to prevent memory leaks.
  */
 export const connectIncidentStream = (options: SseOptions): AbortController => {
-  const { onIncident, onError } = options;
+  const { onIncident, onError, onOpen, onClose } = options;
   const controller = new AbortController();
   const token = localStorage.getItem('token');
 
@@ -65,6 +67,12 @@ export const connectIncidentStream = (options: SseOptions): AbortController => {
     signal: controller.signal,
     openWhenHidden: true, // keep alive even when the tab is hidden
 
+    async onopen(res) {
+      if (res.ok) {
+        onOpen?.(res);
+      }
+    },
+
     onmessage(event) {
       if (event.event === 'new-incident') {
         try {
@@ -74,6 +82,10 @@ export const connectIncidentStream = (options: SseOptions): AbortController => {
           // ignore malformed frames
         }
       }
+    },
+
+    onclose() {
+      onClose?.();
     },
 
     onerror(err) {
