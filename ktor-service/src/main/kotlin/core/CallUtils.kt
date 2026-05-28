@@ -19,6 +19,6 @@ suspend fun extractTrafficLog(call: ApplicationCall, cachedBody: String? = null)
         uri = call.request.uri,
         headers = headersMap,
         bodySnippet = cachedBody,
-        bodyTruncated = cachedBody != null && cachedBody.length > WAF_PAYLOAD_LIMIT_BYTES
+        bodyTruncated = cachedBody != null && cachedBody.length < WAF_PAYLOAD_LIMIT_BYTES
     )
 }
