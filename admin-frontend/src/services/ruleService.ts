@@ -41,8 +41,8 @@ export interface UpdateRuleDto {
 
 export interface Page<T> {
   content: T[];
-  totalElements: number;
-  totalPages: number;
+  total_elements: number;
+  total_pages: number;
   number: number; // current page (0-indexed)
   size: number;
 }

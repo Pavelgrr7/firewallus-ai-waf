@@ -386,8 +386,8 @@ const RulesPage: React.FC = () => {
     try {
       const data = await getRules(p, PAGE_SIZE);
       setRules(data.content);
-      setTotalPages(data.totalPages);
-      setTotalElements(data.totalElements);
+      setTotalPages(data.total_pages ?? 0);
+      setTotalElements(data.total_elements ?? 0);
       setPage(data.number);
     } catch {
       showToast('Failed to load rules.', 'error');

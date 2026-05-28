@@ -279,6 +279,7 @@ const DashboardPage: React.FC = () => {
   const [timelineData, setTimelineData] = useState<TimelineDataPoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [sseConnected, setSseConnected] = useState(false);
+  const [totalBlockedRequests, setTotalBlockedRequests] = useState<number>(0);
 
   // Keep a stable ref to the AbortController so cleanup always cancels the
   // current connection even if React renders multiple times before unmount.
@@ -298,6 +299,7 @@ const DashboardPage: React.FC = () => {
         if (cancelled) return;
 
         setIncidents(incPage.content);
+        setTotalBlockedRequests(incPage.total_elements ?? 0);
         setActiveRules(rulesPage.content.filter((r) => r.is_active).length);
         setTimelineData(initTimelineData(incPage.content, TIMELINE_POINTS));
       } catch (err) {
@@ -321,6 +323,7 @@ const DashboardPage: React.FC = () => {
         setSseConnected(true);
         // Prepend the new incident so the dashboard updates in real-time.
         setIncidents((prev) => [newIncident, ...prev]);
+        setTotalBlockedRequests((prev) => prev + 1);
         setTimelineData((prev) => addIncidentToTimeline(prev, newIncident));
       },
       onError: () => {
@@ -420,8 +423,8 @@ const DashboardPage: React.FC = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
           <StatCard
             title="Blocked Requests"
-            value={formatNumber(incidents.length)}
-            subtitle="Last 200 incidents loaded"
+            value={formatNumber(totalBlockedRequests ?? 0)}
+            subtitle="Total blocked requests"
             icon={<ShieldOff size={22} />}
             accentColor="#f43f5e"
             delay={0}

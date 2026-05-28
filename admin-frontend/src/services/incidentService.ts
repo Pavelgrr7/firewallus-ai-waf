@@ -14,8 +14,8 @@ export interface IncidentResponseDto {
 
 export interface SpringPage<T> {
   content: T[];
-  totalElements: number;
-  totalPages: number;
+  total_elements: number;
+  total_pages: number;
   number: number;
   size: number;
 }
@@ -24,13 +24,13 @@ export interface SpringPage<T> {
 
 const BASE = '/v1/incidents';
 
-/** GET /api/v1/incidents?size=200&page=0 */
+/** GET /api/v1/incidents?size=200&page=0&sort=timestamp,desc */
 export const getIncidents = (
   page = 0,
   size = 200
 ): Promise<SpringPage<IncidentResponseDto>> =>
   api
-    .get<SpringPage<IncidentResponseDto>>(BASE, { params: { page, size } })
+    .get<SpringPage<IncidentResponseDto>>(BASE, { params: { page, size, sort: 'timestamp,desc' } })
     .then((r) => r.data);
 
 /* ===== SSE ===== */

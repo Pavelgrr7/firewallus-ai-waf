@@ -48,8 +48,8 @@ const AuditLogsPage: React.FC = () => {
     try {
       const data = await getAuditLogs(p, PAGE_SIZE);
       setLogs(data.content);
-      setTotalPages(data.totalPages);
-      setTotalElements(data.totalElements);
+      setTotalPages(data.total_pages ?? 0);
+      setTotalElements(data.total_elements ?? 0);
       setPage(data.number);
     } catch {
       setError('Failed to fetch administrator audit logs.');

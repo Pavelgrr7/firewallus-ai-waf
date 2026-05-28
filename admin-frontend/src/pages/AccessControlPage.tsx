@@ -270,8 +270,8 @@ const AccessControlPage: React.FC = () => {
     try {
       const data = await getManagedIps(p, PAGE_SIZE, tab);
       setIps(data.content);
-      setTotalPages(data.totalPages);
-      setTotalElements(data.totalElements);
+      setTotalPages(data.total_pages ?? 0);
+      setTotalElements(data.total_elements ?? 0);
       setPage(data.number);
     } catch {
       showToast('Failed to retrieve access control list.', 'error');
