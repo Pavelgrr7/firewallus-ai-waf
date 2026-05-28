@@ -21,10 +21,8 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.request.httpMethod
 import io.ktor.server.request.receiveChannel
-import io.ktor.server.request.receiveText
 import io.ktor.server.request.uri
 import io.ktor.server.response.respond
-import io.ktor.server.response.respondText
 import io.ktor.utils.io.readRemaining
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.cancelChildren
@@ -98,7 +96,7 @@ class TrafficService(
             .getOrDefault(false) // Fail-Open
 
         if (isRateLimited) {
-            sendIncidentEvent(identity.ip, call.request.uri, "RATE_LIMIT_EXCEEDED", "BLOCK", call)
+            sendIncidentEvent(identity.ip, call.request.uri, "RATE_LIMIT_EXCEEDED", "BLOCK", call, null)
 
             call.respond(HttpStatusCode.TooManyRequests, "Too Many Requests. WAF Rate Limit Exceeded.")
             return
@@ -112,7 +110,7 @@ class TrafficService(
         val trafficLog = extractTrafficLog(call, cachedBodyString)
 
         if (matchedRule != null) {
-            sendIncidentEvent(identity.ip, call.request.uri, matchedRule.name, matchedRule.action.name, call)
+            sendIncidentEvent(identity.ip, call.request.uri, matchedRule.name, matchedRule.action.name, call, cachedBodyString)
 
             // Выполняем действие правила
             when (matchedRule.action) {
@@ -144,14 +142,14 @@ class TrafficService(
         httpClient.proxyToBackend(call, body)
     }
 
-    private fun sendIncidentEvent(ip: String, uri: String, type: String, action: String, call: ApplicationCall) {
+    private fun sendIncidentEvent(ip: String, uri: String, type: String, action: String, call: ApplicationCall, body: String?) {
         serviceScope.launch {
             val incident = IncidentEventDto(
                 incidentType = type,
                 attackerIp = ip,
                 targetUri = uri,
                 actionTaken = action,
-                headersDump = extractTrafficLog(call).headers
+                headersDump = extractTrafficLog(call, body).headers
             )
             kafkaProducer.send(TOPIC_INCIDENT, incident)
         }
@@ -164,7 +162,7 @@ class TrafficService(
 
         val method = parseMethod(call.request.httpMethod.value)
         if (method == HttpMethod.POST || method == HttpMethod.PUT || method == HttpMethod.PATCH) {
-            if (contentLength != null && contentLength <= WAF_PAYLOAD_LIMIT_BYTES) {
+            if (contentLength != null && contentLength > 0 && contentLength <= WAF_PAYLOAD_LIMIT_BYTES) {
                 cachedBodyBytes = call.receiveChannel().readRemaining().readByteArray()
             } else if (contentLength == null) {
                 logger.warn("Chunked or missing Content-Length. Skipping payload inspection.")

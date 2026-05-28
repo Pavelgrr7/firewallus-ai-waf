@@ -10,6 +10,7 @@ import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.plugins.HttpRequestRetry
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.http.HttpMethod
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.*
 import kotlinx.serialization.json.Json
@@ -45,8 +46,9 @@ fun Application.configureDI() {
                 )
             }
             install(HttpRequestRetry) {
-                retryOnServerErrors(maxRetries = 3)
-                retryOnException(maxRetries = 3, retryOnTimeout = true)
+                retryIf(maxRetries = 3) { request, _ ->
+                    request.method in listOf(HttpMethod.Get, HttpMethod.Head, HttpMethod.Options)
+                }
                 exponentialDelay()
             }
         }} onClose { it?.close() }
