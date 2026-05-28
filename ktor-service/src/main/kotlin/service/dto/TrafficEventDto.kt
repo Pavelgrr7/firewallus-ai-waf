@@ -7,7 +7,9 @@ data class TrafficEventDto(
     val ip: String,
     val method: String,
     val uri: String,
-    val headers: Map<String, String>
+    val headers: Map<String, String>,
+    val bodySnippet: String? = null,
+    val bodyTruncated: Boolean = false
 ) : KafkaEvent
 
 enum class HttpMethod {

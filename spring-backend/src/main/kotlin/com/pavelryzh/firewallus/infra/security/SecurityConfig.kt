@@ -47,8 +47,8 @@ class SecurityConfig(private val jwtFilter: JwtFilter) {
     fun corsConfigurationSource(): CorsConfigurationSource {
         val configuration = CorsConfiguration()
         configuration.allowedOrigins = listOf(
-            "http://localhost:5173", "http://localhost:3000", "http://localhost:3001",
-            "http://127.0.0.1:5173", "http://127.0.0.1:3000", "http://127.0.0.1:3001"
+            "http://localhost:5173", "http://localhost:3000", "http://localhost:9000", "http://localhost:80", "http://localhost",
+            "http://127.0.0.1:5173", "http://127.0.0.1:3000", "http://127.0.0.1:9000", "http://127.0.0.1:80", "http://127.0.0.1"
         )
         configuration.allowedMethods = listOf("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
         configuration.allowedHeaders = listOf("*")

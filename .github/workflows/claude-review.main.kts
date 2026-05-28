@@ -29,6 +29,16 @@ val myWorkflow = workflow(
     ) {
         uses(name = "Check out", action = CheckoutV4(fetchDepth = CheckoutV4.FetchDepth.Value(0)))
 
+        // diff ДО запуска агента
+        run(
+            name = "Generate PR Diff",
+            env = linkedMapOf(
+                "PR_NUMBER" to expr("github.event.pull_request.number"),
+                "GITHUB_TOKEN" to expr("secrets.GITHUB_TOKEN")
+            ),
+            command = "gh pr diff ${'$'}PR_NUMBER > pr_diff.txt"
+        )
+
         run(
             name = "Load Prompt into Environment",
             command = """
@@ -52,7 +62,7 @@ val myWorkflow = workflow(
                     "anthropic_api_key" to expr("secrets.ANTHROPIC_API_KEY"),
                     "github_token" to expr("secrets.GITHUB_TOKEN"),
                     "prompt" to expr("env.CLAUDE_PROMPT"),
-                    "claude_args" to "--model claude-sonnet-4.6 --allowed-tools \"Write,Read,Bash(git *),Bash(cat *),Bash(ls *)\"",
+                    "claude_args" to "--model claude-sonnet-4.6 --allowed-tools \"Write,Read\"",
                     "show_full_output" to "true"
                 )
             ),
@@ -61,9 +71,10 @@ val myWorkflow = workflow(
 
         // Fallback на GPT, если Sonnet недоступен
         // Важно: используется не стандартный api antropic, а сторонний провайдер, у которого модель gpt-5.4 есть
+
         val reviewGpt = uses(
             name = "Run Claude Code Review (GPT-5.4 Fallback)",
-            // только если первый шаг упал
+            continueOnError = true,
             condition = expr("steps.${reviewSonnet.id}.outcome == 'failure'"),
             action = CustomAction(
                 actionOwner = "anthropics",
@@ -73,7 +84,7 @@ val myWorkflow = workflow(
                     "anthropic_api_key" to expr("secrets.ANTHROPIC_API_KEY"),
                     "github_token" to expr("secrets.GITHUB_TOKEN"),
                     "prompt" to expr("env.CLAUDE_PROMPT"),
-                    "claude_args" to "--model gpt-5.4 --allowed-tools \"Write,Read,Bash(git *),Bash(cat *),Bash(ls *)\"",
+                    "claude_args" to "--model gpt-5.4 --allowed-tools \"Write,Read\"",
                     "show_full_output" to "true"
                 )
             ),
@@ -88,18 +99,24 @@ val myWorkflow = workflow(
                 "GITHUB_TOKEN" to expr("secrets.GITHUB_TOKEN")
             ),
             command = """
+                if [ ! -f pr_review.md ]; then
+                    echo "pr_review.md not found! The agent likely failed to write the file."
+                    exit 1
+                fi
+                
                 VERDICT=${'$'}(head -n 1 pr_review.md | tr -d '\r' | tr -d ' ')
                 
                 tail -n +2 pr_review.md > final_review.md
                 
                 echo "Verdict is: ${'$'}VERDICT"
                 
+                
                 if [ "${'$'}VERDICT" = "APPROVE" ]; then
-                    gh pr review ${'$'}PR_NUMBER --approve -F final_review.md
+                    gh pr review "${'$'}PR_NUMBER" --approve -F final_review.md
                 elif [ "${'$'}VERDICT" = "REQUEST_CHANGES" ]; then
-                    gh pr review ${'$'}PR_NUMBER --request-changes -F final_review.md
+                    gh pr review "${'$'}PR_NUMBER" --request-changes -F final_review.md
                 else
-                    gh pr review ${'$'}PR_NUMBER --comment -F final_review.md
+                    gh pr review "${'$'}PR_NUMBER" --comment -F final_review.md
                 fi
             """.trimIndent()
         )

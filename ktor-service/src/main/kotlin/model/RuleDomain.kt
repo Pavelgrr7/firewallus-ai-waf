@@ -5,7 +5,7 @@ import kotlinx.serialization.Serializable
 enum class Action { BLOCK, ALLOW, LOG }
 
 @Serializable
-enum class Target { IP, URI, HEADER, METHOD }
+enum class Target { IP, URI, HEADER, METHOD, BODY }
 
 @Serializable
 enum class Operator { EQUALS, CONTAINS, REGEX }
