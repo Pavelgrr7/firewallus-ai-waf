@@ -11,6 +11,7 @@ import org.springframework.data.web.PageableDefault
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
@@ -21,9 +22,10 @@ class AuditLogController(
 ) {
     @GetMapping
     fun getAuditLogs(
+        @RequestParam(required = false) search: String?,
         @PageableDefault(size = 20, page = 0, sort = ["timestamp"], direction = Sort.Direction.DESC)
         pageable: Pageable
     ): Page<AuditLogResponseDto> {
-        return auditLogService.findAll(pageable).map { it.toDto() }
+        return auditLogService.findAll(search, pageable).map { it.toDto() }
     }
 }

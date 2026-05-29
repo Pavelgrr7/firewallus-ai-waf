@@ -21,6 +21,17 @@ class IncidentNotificationService {
         emitter.onTimeout { emitters.remove(emitter) }
         emitter.onError { emitters.remove(emitter) }
 
+        // Send an initial event to flush the headers and establish the connection immediately
+        try {
+            emitter.send(
+                SseEmitter.event()
+                    .name("connection-established")
+                    .data("connected")
+            )
+        } catch (e: Exception) {
+            emitters.remove(emitter)
+        }
+
         return emitter
     }
 

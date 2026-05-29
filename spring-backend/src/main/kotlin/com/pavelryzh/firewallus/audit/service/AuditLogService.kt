@@ -16,7 +16,7 @@ class AuditLogService(private val auditRepo: AuditLogRepository){
     }
 
     @Transactional(readOnly = true)
-    fun findAll(pageable: Pageable): Page<AuditLog> {
-        return auditRepo.findAll(pageable)
+    fun findAll(search: String?, pageable: Pageable): Page<AuditLog> {
+        return auditRepo.searchLogs(search, pageable)
     }
 }

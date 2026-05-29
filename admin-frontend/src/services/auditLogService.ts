@@ -14,6 +14,6 @@ export interface AuditLogResponseDto {
 
 const BASE = '/v1/audit-logs';
 
-/** GET /api/v1/audit-logs?page=&size= */
-export const getAuditLogs = (page = 0, size = 20): Promise<Page<AuditLogResponseDto>> =>
-  api.get<Page<AuditLogResponseDto>>(BASE, { params: { page, size } }).then((r) => r.data);
+/** GET /api/v1/audit-logs?page=&size=&search= */
+export const getAuditLogs = (page = 0, size = 20, search?: string): Promise<Page<AuditLogResponseDto>> =>
+  api.get<Page<AuditLogResponseDto>>(BASE, { params: { page, size, search } }).then((r) => r.data);

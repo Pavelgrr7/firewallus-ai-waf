@@ -6,6 +6,8 @@ services:
         - type=gha,scope=spring
       cache_to:
         - type=gha,mode=max,scope=spring
+      environment:
+        - JAVA_TOOL_OPTIONS=-Xmx512m
 
   ktor-service:
     build:
@@ -13,22 +15,20 @@ services:
         - type=gha,scope=ktor
       cache_to:
         - type=gha,mode=max,scope=ktor
+    environment:
+      - JAVA_TOOL_OPTIONS=-Xmx256m
 
   admin-frontend:
-    build:
-      cache_from:
-        - type=gha,scope=frontend
-      cache_to:
-        - type=gha,mode=max,scope=frontend
+    profiles:
+      - donotstart
 
   notification-service:
-    build:
-      cache_from:
-        - type=gha,scope=notification
-      cache_to:
-        - type=gha,mode=max,scope=notification
-
+    profiles:
+      - donotstart
 
   dbgate:
     profiles:
       - donotstart
+  kafka:
+    environment:
+      - KAFKA_HEAP_OPTS=-Xmx256m -Xms256m

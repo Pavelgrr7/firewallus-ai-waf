@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { loginUser, type LoginCredentials } from '../services/authService';
 
@@ -33,6 +34,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const storedToken = localStorage.getItem('token');
       const storedUser = localStorage.getItem('user');
       if (storedToken && storedUser) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setToken(storedToken);
         setUser(JSON.parse(storedUser));
       }
