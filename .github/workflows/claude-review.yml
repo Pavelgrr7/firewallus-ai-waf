@@ -31,6 +31,8 @@ jobs:
       name: 'Load Prompt into Environment'
       run: |-
         tr -d '\r' < .github/claude-review-prompt.md > clean_prompt.md
+        echo "The exact absolute path to the diff file is: ${'$'}GITHUB_WORKSPACE/pr_diff.txt" >> clean_prompt.md
+
         echo "CLAUDE_PROMPT<<EOF" >> $GITHUB_ENV
         cat clean_prompt.md >> $GITHUB_ENV
         echo "" >> $GITHUB_ENV
