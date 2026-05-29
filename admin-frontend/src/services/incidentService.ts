@@ -20,6 +20,16 @@ export interface SpringPage<T> {
   size: number;
 }
 
+export interface IncidentStatsDto {
+  total: number;
+  ml_blocked: number;
+  static_blocked: number;
+  allowed: number;
+  attack_distribution: { name: string; value: number }[];
+  top_blocked_ips: { name: string; value: number }[];
+  action_metrics: { name: string; value: number }[];
+}
+
 /* ===== REST ===== */
 
 const BASE = '/v1/incidents';
@@ -32,6 +42,10 @@ export const getIncidents = (
   api
     .get<SpringPage<IncidentResponseDto>>(BASE, { params: { page, size, sort: 'timestamp,desc' } })
     .then((r) => r.data);
+
+/** GET /api/v1/incidents/stats */
+export const getIncidentStats = (): Promise<IncidentStatsDto> =>
+  api.get<IncidentStatsDto>(`${BASE}/stats`).then((r) => r.data);
 
 /* ===== SSE ===== */
 

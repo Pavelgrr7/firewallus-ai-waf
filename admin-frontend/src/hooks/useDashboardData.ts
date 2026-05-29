@@ -1,5 +1,10 @@
 import { useState, useEffect } from 'react';
-import { getIncidents, connectIncidentStream, type IncidentResponseDto } from '../services/incidentService';
+import {
+  getIncidents,
+  getIncidentStats,
+  connectIncidentStream,
+  type IncidentResponseDto,
+} from '../services/incidentService';
 import {
   initTimelineData,
   addIncidentToTimeline,
@@ -18,6 +23,9 @@ export function useDashboardData() {
     staticBlocked: 0,
     allowed: 0,
   });
+  const [attackDistribution, setAttackDistribution] = useState<{ name: string; value: number }[]>([]);
+  const [topBlockedIps, setTopBlockedIps] = useState<{ name: string; value: number }[]>([]);
+  const [actionMetrics, setActionMetrics] = useState<{ name: string; value: number }[]>([]);
 
   const [sseConnected, setSseConnected] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -25,27 +33,24 @@ export function useDashboardData() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const pageData = await getIncidents(0, 1000); // load last 1000 items
+        const [pageData, statsData] = await Promise.all([
+          getIncidents(0, 1000), // load last 1000 items
+          getIncidentStats(),
+        ]);
         const list = pageData.content ?? [];
         setIncidents(list);
 
-        const total = pageData.total_elements ?? list.length;
-        const mlBlocked = list.filter(
-          (x) =>
-            x.action_taken === 'BLOCK' &&
-            x.confidence_score !== null &&
-            x.confidence_score !== undefined
-        ).length;
-        const staticBlocked = list.filter(
-          (x) =>
-            x.action_taken === 'BLOCK' &&
-            (x.confidence_score === null || x.confidence_score === undefined)
-        ).length;
-        const allowed = list.filter(
-          (x) => x.action_taken === 'ALLOW' || x.action_taken === 'LOG'
-        ).length;
+        setStats({
+          total: statsData.total,
+          mlBlocked: statsData.ml_blocked,
+          staticBlocked: statsData.static_blocked,
+          allowed: statsData.allowed,
+        });
 
-        setStats({ total, mlBlocked, staticBlocked, allowed });
+        setAttackDistribution(statsData.attack_distribution ?? []);
+        setTopBlockedIps(statsData.top_blocked_ips ?? []);
+        setActionMetrics(statsData.action_metrics ?? []);
+
         setTimeline(initTimelineData(list));
       } catch (err) {
         console.error('Failed to load WAF incident history', err);
@@ -81,6 +86,40 @@ export function useDashboardData() {
           };
         });
 
+        setAttackDistribution((prev) => {
+          const type = newIncident.incident_type;
+          const idx = prev.findIndex((x) => x.name === type);
+          if (idx !== -1) {
+            return prev.map((x, i) => (i === idx ? { ...x, value: x.value + 1 } : x));
+          } else {
+            return [...prev, { name: type, value: 1 }];
+          }
+        });
+
+        setActionMetrics((prev) => {
+          const action = newIncident.action_taken;
+          const idx = prev.findIndex((x) => x.name === action);
+          if (idx !== -1) {
+            return prev.map((x, i) => (i === idx ? { ...x, value: x.value + 1 } : x));
+          } else {
+            return [...prev, { name: action, value: 1 }];
+          }
+        });
+
+        if (newIncident.action_taken === 'BLOCK') {
+          setTopBlockedIps((prev) => {
+            const ip = newIncident.attacker_ip;
+            const idx = prev.findIndex((x) => x.name === ip);
+            let nextList = [];
+            if (idx !== -1) {
+              nextList = prev.map((x, i) => (i === idx ? { ...x, value: x.value + 1 } : x));
+            } else {
+              nextList = [...prev, { name: ip, value: 1 }];
+            }
+            return nextList.sort((a, b) => b.value - a.value).slice(0, 5);
+          });
+        }
+
         setTimeline((prev) => addIncidentToTimeline(prev, newIncident));
       },
       onOpen: () => {
@@ -104,6 +143,9 @@ export function useDashboardData() {
     incidents,
     timeline,
     stats,
+    attackDistribution,
+    topBlockedIps,
+    actionMetrics,
     sseConnected,
     loading,
   };

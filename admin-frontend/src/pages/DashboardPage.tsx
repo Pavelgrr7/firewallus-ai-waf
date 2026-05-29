@@ -24,15 +24,24 @@ import {
 import Header from '../components/layout/Header';
 import Card from '../components/ui/Card';
 import { useDashboardData } from '../hooks/useDashboardData';
-import { formatNumber, countBy, topN } from '../utils/dashboardHelpers';
+import { formatNumber } from '../utils/dashboardHelpers';
 
 const DashboardPage: React.FC = () => {
-  const { incidents, timeline, stats, sseConnected, loading } = useDashboardData();
+  const {
+    incidents,
+    timeline,
+    stats,
+    attackDistribution,
+    topBlockedIps,
+    actionMetrics,
+    sseConnected,
+    loading,
+  } = useDashboardData();
 
-  // Derived charts statistics
-  const attackTypes = countBy(incidents, 'incident_type');
-  const topIps = topN(countBy(incidents, 'attacker_ip'), 5);
-  const actionCounts = countBy(incidents, 'action_taken');
+  // Stats are aggregated in real-time on the backend
+  const attackTypes = attackDistribution;
+  const topIps = topBlockedIps;
+  const actionCounts = actionMetrics;
 
   // Chart colors
   const PIE_COLORS = ['#f43f5e', '#a855f7', '#06b6d4', '#f59e0b', '#3b82f6', '#10b981'];
