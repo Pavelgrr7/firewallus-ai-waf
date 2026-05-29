@@ -44,7 +44,7 @@ class WafAttackSimulation : Simulation() {
     init {
         setUp(
             // 50 обычных юзеров плавно заходят в течение 10 секунд
-            normalTraffic.injectOpen(rampUsers(5000).during(10)),
+            normalTraffic.injectOpen(rampUsers(50).during(10)),
 
             // 20 хакеров бьют инъекциями
             sqlInjectionAttack.injectOpen(atOnceUsers(20)),
