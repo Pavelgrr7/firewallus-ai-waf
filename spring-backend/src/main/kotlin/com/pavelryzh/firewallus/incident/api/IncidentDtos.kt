@@ -49,3 +49,25 @@ fun Incident.toDto(): IncidentResponseDto {
         timestamp = timestamp ?: Instant.now()
     )
 }
+
+data class NameValueDto(
+    val name: String,
+    val value: Long
+)
+
+data class IncidentStatsSummary(
+    val total: Long,
+    val mlBlocked: Long,
+    val staticBlocked: Long,
+    val allowed: Long
+)
+
+data class IncidentStatsDto(
+    val total: Long,
+    val mlBlocked: Long,
+    val staticBlocked: Long,
+    val allowed: Long,
+    val attackDistribution: List<NameValueDto>,
+    val topBlockedIps: List<NameValueDto>,
+    val actionMetrics: List<NameValueDto>
+)

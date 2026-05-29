@@ -43,7 +43,7 @@ jobs:
       run: 'docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d --wait'
     - id: 'step-4'
       name: 'Run Gatling Tests'
-      run: 'cd ktor-service && chmod +x gradlew && ./gradlew gatlingRun --no-daemon'
+      run: 'cd ktor-service && chmod +x gradlew && ./gradlew gatlingRun --no-daemon -Dorg.gradle.jvmargs=-Xmx512m'
     - id: 'step-5'
       name: 'Upload Gatling Report'
       uses: 'actions/upload-artifact@v4'

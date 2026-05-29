@@ -33,4 +33,9 @@ class IncidentController(private val incidentService: IncidentService,
         val incidentsPage = incidentService.getAllIncidents(pageable)
         return incidentsPage.map { it.toDto() }
     }
+
+    @GetMapping("/stats")
+    fun getStats(): IncidentStatsDto {
+        return incidentService.getStats()
+    }
 }

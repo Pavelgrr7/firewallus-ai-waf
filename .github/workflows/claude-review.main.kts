@@ -43,6 +43,7 @@ val myWorkflow = workflow(
             name = "Load Prompt into Environment",
             command = """
                 tr -d '\r' < .github/claude-review-prompt.md > clean_prompt.md
+
                 echo "CLAUDE_PROMPT<<EOF" >> ${'$'}GITHUB_ENV
                 cat clean_prompt.md >> ${'$'}GITHUB_ENV
                 echo "" >> ${'$'}GITHUB_ENV

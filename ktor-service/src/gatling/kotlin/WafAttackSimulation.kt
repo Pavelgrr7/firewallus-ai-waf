@@ -5,7 +5,7 @@ import io.gatling.javaapi.http.HttpDsl.*
 class WafAttackSimulation : Simulation() {
 
     private val httpProtocol = http
-        .baseUrl("http://localhost:80")
+        .baseUrl("http://127.0.0.1:80")
         .acceptHeader("application/json")
 
     // Обычный трафик (Легитимные пользователи)

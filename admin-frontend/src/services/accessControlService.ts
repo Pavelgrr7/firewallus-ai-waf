@@ -25,7 +25,7 @@ export const getManagedIps = (
   size = 20,
   listType?: IpListType
 ): Promise<Page<ManagedIpResponseDto>> => {
-  const params: Record<string, any> = { page, size };
+  const params: Record<string, string | number> = { page, size };
   if (listType) {
     params.listType = listType;
   }
