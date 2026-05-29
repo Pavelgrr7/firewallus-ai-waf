@@ -34,10 +34,21 @@ const AuditLogsPage: React.FC = () => {
     loading,
     refreshing,
     search,
-    setSearch,
     error,
     fetchLogs,
   } = useAuditLogs();
+
+  const [tempSearch, setTempSearch] = React.useState(search);
+
+  React.useEffect(() => {
+    setTempSearch(search);
+  }, [search]);
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      fetchLogs(0, tempSearch);
+    }
+  };
 
   return (
     <div className="min-h-screen">
@@ -55,7 +66,7 @@ const AuditLogsPage: React.FC = () => {
           <div className="flex items-center gap-2">
             <button
               id="audit-refresh-btn"
-              onClick={() => fetchLogs(page, true)}
+              onClick={() => fetchLogs(page, undefined, true)}
               disabled={refreshing || loading}
               className="p-2 rounded-lg text-cyber-300 hover:text-white hover:bg-cyber-700 transition-all disabled:opacity-40"
               title="Refresh Logs"
@@ -69,9 +80,10 @@ const AuditLogsPage: React.FC = () => {
         <div className="max-w-md animate-fade-in">
           <Input
             id="audit-search"
-            placeholder="Search by action, rule name, or admin ID…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search by action, rule name, or admin ID (Press Enter)…"
+            value={tempSearch}
+            onChange={(e) => setTempSearch(e.target.value)}
+            onKeyDown={handleKeyDown}
             icon={<Search size={15} />}
           />
         </div>

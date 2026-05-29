@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { getAuditLogs, type AuditLogResponseDto } from '../services/auditLogService';
 
 const PAGE_SIZE = 20;
@@ -13,20 +13,27 @@ export function useAuditLogs() {
   const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [search, setSearch] = useState('');
+  const [search, setSearchState] = useState('');
   const [error, setError] = useState('');
 
+  const searchRef = useRef('');
+
   const fetchLogs = useCallback(
-    async (p: number, silent = false) => {
+    async (p: number, query?: string, silent = false) => {
       if (!silent) setLoading(true);
       else setRefreshing(true);
       setError('');
       try {
-        const data = await getAuditLogs(p, PAGE_SIZE);
+        const activeQuery = query !== undefined ? query : searchRef.current;
+        const data = await getAuditLogs(p, PAGE_SIZE, activeQuery);
         setLogs(data.content ?? []);
         setTotalPages(data.total_pages ?? 0);
         setTotalElements(data.total_elements ?? 0);
         setPage(data.number);
+        if (query !== undefined) {
+          searchRef.current = query;
+          setSearchState(query);
+        }
       } catch {
         setError('Failed to fetch administrator audit logs.');
       } finally {
@@ -38,31 +45,18 @@ export function useAuditLogs() {
   );
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    fetchLogs(0);
+    fetchLogs(0, '');
   }, [fetchLogs]);
 
-  // Client-side local filtering based on action, rule_name, or admin_id within current page
-  const filteredLogs = logs.filter((log) => {
-    const q = search.trim().toLowerCase();
-    if (!q) return true;
-    return (
-      log.rule_name.toLowerCase().includes(q) ||
-      log.action.toLowerCase().includes(q) ||
-      (log.admin_id ?? '').toLowerCase().includes(q)
-    );
-  });
-
   return {
-    logs: filteredLogs,
-    rawLogs: logs,
+    logs,
     totalPages,
     totalElements,
     page,
     loading,
     refreshing,
     search,
-    setSearch,
+    setSearch: setSearchState,
     error,
     fetchLogs,
   };
