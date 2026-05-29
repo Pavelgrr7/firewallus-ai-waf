@@ -49,3 +49,10 @@ fun Incident.toDto(): IncidentResponseDto {
         timestamp = timestamp ?: Instant.now()
     )
 }
+
+data class IncidentStatsDto(
+    val total: Long,
+    val mlBlocked: Long,
+    val staticBlocked: Long,
+    val allowed: Long
+)

@@ -1,6 +1,7 @@
 package com.pavelryzh.firewallus.incident.service
 
 import com.pavelryzh.firewallus.incident.api.IncidentEventDto
+import com.pavelryzh.firewallus.incident.api.IncidentStatsDto
 import com.pavelryzh.firewallus.incident.api.toDto
 import com.pavelryzh.firewallus.incident.api.toEntity
 import com.pavelryzh.firewallus.incident.domain.Incident
@@ -31,5 +32,8 @@ class IncidentService(
         return incidentRepo.findAll(pageable)
     }
 
-
+    @Transactional(readOnly = true)
+    fun getStats(): IncidentStatsDto {
+        return incidentRepo.getIncidentStats()
+    }
 }
