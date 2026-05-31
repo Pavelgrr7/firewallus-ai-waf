@@ -1,6 +1,7 @@
 package com.pavelryzh.firewallus.settings.api
 
 import com.pavelryzh.firewallus.settings.domain.WafSettings
+import jakarta.validation.constraints.Pattern
 
 
 data class SettingsResponseDto(
@@ -8,7 +9,8 @@ data class SettingsResponseDto(
     val rateLimitWindowSec: Int,
     val tgBotToken: String?,
     val tgChatId: String?,
-    val alertThreshold: Int
+    val alertThreshold: Int,
+    val targetUrl: String,
 )
 
 data class UpdateSettingsDto(
@@ -17,6 +19,11 @@ data class UpdateSettingsDto(
     val tgBotToken: String? = null,
     val tgChatId: String? = null,
     val alertThreshold: Int? = null,
+    @field:Pattern(
+        regexp = "^https?://.*",
+        message = "URL бэкенда должен начинаться с http:// или https://"
+    )
+    val targetUrl: String? = null
 )
 
 fun WafSettings.toDto(): SettingsResponseDto {
@@ -26,5 +33,6 @@ fun WafSettings.toDto(): SettingsResponseDto {
         tgBotToken = this.tgBotToken,
         tgChatId = this.tgChatId,
         alertThreshold = this.alertThreshold,
+        targetUrl = this.targetUrl
     )
 }

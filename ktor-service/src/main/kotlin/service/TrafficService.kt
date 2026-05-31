@@ -3,33 +3,20 @@ package com.pavelryzh.service
 import com.pavelryzh.core.IdentityExtractor
 import com.pavelryzh.core.WAF_PAYLOAD_LIMIT_BYTES
 import com.pavelryzh.core.WafRuleEngine
+import com.pavelryzh.core.extractTrafficLog
 import com.pavelryzh.kafka.KafkaTrafficProducer
 import com.pavelryzh.model.Action
-import com.pavelryzh.model.WafRule
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.launch
+import com.pavelryzh.model.TargetUrl
 import com.pavelryzh.plugins.logger
-import com.pavelryzh.core.extractTrafficLog
-import com.pavelryzh.model.GlobalSettings
 import com.pavelryzh.service.dto.HttpMethod
 import com.pavelryzh.service.dto.IncidentEventDto
 import com.pavelryzh.service.dto.parseMethod
-import io.ktor.http.HttpHeaders
-import io.ktor.http.HttpStatusCode
-import io.ktor.server.application.ApplicationCall
-import io.ktor.server.request.httpMethod
-import io.ktor.server.request.receiveChannel
-import io.ktor.server.request.uri
-import io.ktor.server.response.respond
-import io.ktor.utils.io.readRemaining
-import kotlinx.coroutines.CoroutineExceptionHandler
-import kotlinx.coroutines.cancelChildren
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withTimeoutOrNull
+import io.ktor.http.*
+import io.ktor.server.application.*
+import io.ktor.server.request.*
+import io.ktor.server.response.*
+import io.ktor.utils.io.*
+import kotlinx.coroutines.*
 import kotlinx.io.readByteArray
 
 class TrafficService(
@@ -37,6 +24,7 @@ class TrafficService(
     private val redisWafClient: RedisWafClient,
     private val ruleEngine: WafRuleEngine,
     private val httpClient: ProxyHttpClient,
+    private val configManager: WafConfigManager
     ) : AutoCloseable {
 
     private val logger = logger()
@@ -48,38 +36,19 @@ class TrafficService(
 
     private val serviceScope = CoroutineScope(scopeJob + Dispatchers.IO + exceptionHandler)
 
-    @Volatile
-    private var settings: GlobalSettings = GlobalSettings()
-
-    @Volatile
-    private var activeRules: List<WafRule> = emptyList()
-
-    init {
-        // Корутина раз в 10 секунд фетчит правила из Redis
-        serviceScope.launch {
-            while (isActive) {
-                activeRules = runCatching { redisWafClient.getActiveRules() }
-                    .getOrDefault(activeRules) // Redis упал -> старые правила
-
-                settings = runCatching { redisWafClient.getSettings() }
-                    .getOrNull() ?: settings
-
-                delay(10_000)
-            }
-        }
-    }
-
     suspend fun handleRequest(call: ApplicationCall) {
 
         val identity = IdentityExtractor.extract(call)
         val ip = identity.ip
+
+        val settings = configManager.settings.value
 
         // Проверка белого списка -> проверка банов -> проверка rate limit -> проврка правил
 
         val isWhitelisted = redisWafClient.isWhitelisted(identity.ip)
         if (isWhitelisted) {
             logger.debug("IP ${identity.ip} is whitelisted. Bypassing WAF.")
-            proxyToBackend(call, null)
+            proxyToBackend(settings.targetUrl, call, null)
             return
         }
         // Fail-Open: если Redis недоступен, разрешаем трафик (безопаснее, чем Fail-Closed)
@@ -91,6 +60,8 @@ class TrafficService(
             call.respond(HttpStatusCode.Forbidden, "Access Denied by WAF")
             return
         }
+
+        val activeRules = configManager.activeRules.value
 
         val isRateLimited = runCatching { redisWafClient.isRateLimited(ip, settings.limit, settings.window) }
             .getOrDefault(false) // Fail-Open
@@ -123,7 +94,7 @@ class TrafficService(
                 }
                 Action.ALLOW -> {
                     logger.info("Rule ${matchedRule.name} matched in ALLOW mode for IP $ip")
-                    proxyToBackend(call, cachedBodyBytes)
+                    proxyToBackend(settings.targetUrl, call, cachedBodyBytes)
                     return
                 }
             }
@@ -135,11 +106,11 @@ class TrafficService(
 
             )
         }
-        proxyToBackend(call, cachedBodyBytes)
+        proxyToBackend(settings.targetUrl, call, cachedBodyBytes)
     }
 
-    private suspend fun proxyToBackend(call: ApplicationCall, body: ByteArray?) {
-        httpClient.proxyToBackend(call, body)
+    private suspend fun proxyToBackend(targetUrl: TargetUrl, call: ApplicationCall, body: ByteArray?) {
+        httpClient.proxyToBackend(targetUrl, call, body)
     }
 
     private fun sendIncidentEvent(ip: String, uri: String, type: String, action: String, call: ApplicationCall, body: String?) {
