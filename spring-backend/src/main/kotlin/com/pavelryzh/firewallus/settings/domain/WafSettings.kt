@@ -24,7 +24,10 @@ class WafSettings(
     var tgChatId: String? = null,
 
     @Column(name = "alert_threshold", nullable = false)
-    var alertThreshold: Int = 50
+    var alertThreshold: Int = 50,
+
+    @Column(name = "target_url", nullable = false)
+    var targetUrl: String = "http://backend:8080"
 ) {
     @Id
     var id: Int = 1 // Всегда 1

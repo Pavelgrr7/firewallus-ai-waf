@@ -48,6 +48,8 @@ class WafSettingsService(
         updateDto.tgBotToken?.let { settings.tgBotToken = it }
         updateDto.tgChatId?.let { settings.tgChatId = it }
         updateDto.alertThreshold?.let { settings.alertThreshold = it }
+        updateDto.targetUrl?.let { settings.targetUrl = it }
+
         val adminId = currentAdminProvider.getCurrentAdminId()
 
         eventPublisher.publishEvent(SettingsUpdatedEvent(settings, adminId))
