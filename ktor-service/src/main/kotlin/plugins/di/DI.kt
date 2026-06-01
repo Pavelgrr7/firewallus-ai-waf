@@ -6,6 +6,7 @@ import com.pavelryzh.service.KtorHttpClient
 import com.pavelryzh.service.ProxyHttpClient
 import com.pavelryzh.service.RedisWafClient
 import com.pavelryzh.service.TrafficService
+import com.pavelryzh.service.WafConfigManager
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.plugins.HttpRequestRetry
@@ -48,8 +49,9 @@ fun Application.configureDI() {
                 wafRetryPolicy()
             }
         }} onClose { it?.close() }
+        single { WafConfigManager(get() ) } onCloseWith lifecycleLogger
         single { KtorHttpClient(get()) } onCloseWith lifecycleLogger bind ProxyHttpClient::class
-        single { TrafficService(get(), get(), get(), get()) } onCloseWith lifecycleLogger
+        single { TrafficService(get(), get(), get(), get(), get()) } onCloseWith lifecycleLogger
     }
 
     install(Koin) {
