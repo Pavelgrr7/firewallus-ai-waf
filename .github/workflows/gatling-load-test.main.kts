@@ -22,7 +22,7 @@ if (currentDir != "workflows") {
 val myWorkflow = workflow(
     name = "Gatling Load Test",
     on = listOf(
-        Push(branches = listOf("main")),
+        Push(branches = listOf("main", "chore/load-test-pipeline-target-server")),
         WorkflowDispatch()
     ),
     sourceFile = __FILE__.toPath().toAbsolutePath()
@@ -66,6 +66,8 @@ val myWorkflow = workflow(
                 "DEFAULT_REDIS_PORT" to expr("secrets.DEFAULT_REDIS_PORT"),
                 "SEED_DEFAULT_RULES" to expr("secrets.SEED_DEFAULT_RULES"),
 
+                "TARGET_PORT" to "8080",
+                "WAF_DEFAULT_TARGET_URL" to "http://target-backend:8080",
                 // Дефолтные лимиты для теста
                 "WAF_DEFAULT_RATE_LIMIT_REQUESTS" to "100",
                 "WAF_DEFAULT_RATE_LIMIT_WINDOW" to "60"
