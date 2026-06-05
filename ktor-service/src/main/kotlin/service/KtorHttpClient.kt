@@ -24,7 +24,8 @@ class KtorHttpClient(
                 call.request.headers.forEach { key, values ->
                     if (!key.equals(HttpHeaders.Host, ignoreCase = true) &&
                         !key.equals(HttpHeaders.ContentLength, ignoreCase = true) &&
-                        !key.equals(HttpHeaders.TransferEncoding, ignoreCase = true)
+                        !key.equals(HttpHeaders.TransferEncoding, ignoreCase = true) &&
+                        !key.equals(HttpHeaders.Connection, ignoreCase = true)
                     ) {
                         appendAll(key, values)
                     }
@@ -34,7 +35,11 @@ class KtorHttpClient(
             if (cachedBodyBytes != null) {
                 setBody(cachedBodyBytes)
             } else {
-                setBody(call.receiveChannel())
+                val contentLength = call.request.headers[HttpHeaders.ContentLength]?.toLongOrNull()
+                val isChunked = call.request.headers[HttpHeaders.TransferEncoding]?.equals("chunked", ignoreCase = true) == true
+                if ((contentLength != null && contentLength > 0) || isChunked) {
+                    setBody(call.receiveChannel())
+                }
             }
         }
 

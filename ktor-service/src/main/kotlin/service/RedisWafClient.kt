@@ -156,13 +156,15 @@ class RedisWafClient(redisUri: String) : AutoCloseable {
     // НА ДАННОМ ЭТАПЕ НЕ НУЖНА ИДЕАЛЬНАЯ PROD-READY ПРОВЕРКА
     // ДОСТАТОЧНО БАЗОВОГО МЕТОДА, КОТОРЫЙ БУДЕТ ДЕТАЛЬНО ПРОРАБОТАН В БУДУЩЕМ
     private fun sanitizeIp(ip: String): String {
-        return when {
-            IPV4_REGEX.matches(ip) || IPV6_REGEX.matches(ip) -> {
-                runCatching {
-                    java.net.InetAddress.getByName(ip).hostAddress
-                }.getOrElse { ip }
-            }
-            else -> throw IllegalArgumentException("Invalid IP format: $ip")
+        if (IPV4_REGEX.matches(ip) || IPV6_REGEX.matches(ip)) {
+            return runCatching {
+                java.net.InetAddress.getByName(ip).hostAddress
+            }.getOrElse { ip }
+        }
+        return runCatching {
+            java.net.InetAddress.getByName(ip).hostAddress
+        }.getOrElse {
+            throw IllegalArgumentException("Invalid IP format: $ip")
         }
     }
 

@@ -13,18 +13,40 @@ import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Component
 import com.pavelryzh.firewallus.rule.domain.Target
 import com.pavelryzh.firewallus.rule.event.RuleCacheEvent
+import org.springframework.transaction.annotation.Transactional
 
 @Component
 class DefaultRulesSeeder(
     private val ruleRepository: RuleRepository,
     private val eventPublisher: ApplicationEventPublisher,
     // Флаг включения сидера (по умолчанию true)
-    @Value($$"${waf.seed.default-rules:true}") private val seedDefaultRules: Boolean
+    @Value("\${waf.seed.default-rules:true}") private val seedDefaultRules: Boolean
 ) : ApplicationRunner {
 
     private val logger = LoggerFactory.getLogger(DefaultRulesSeeder::class.java)
 
-    override fun run(args: ApplicationArguments) = seed()
+    @Transactional
+    override fun run(args: ApplicationArguments) {
+        seed()
+        syncRulesToRedis()
+    }
+
+    fun syncRulesToRedis() {
+        val activeRules = ruleRepository.findAll().filter { it.isActive }
+        activeRules.forEach { rule ->
+            eventPublisher.publishEvent(
+                RuleCacheEvent.Saved(
+                    ruleId = rule.id!!,
+                    name = rule.name,
+                    action = rule.action,
+                    conditions = rule.conditions,
+                    isActive = rule.isActive,
+                    adminId = null
+                )
+            )
+        }
+        logger.info("Синхронизировано ${activeRules.size} активных правил с Redis.")
+    }
 
     fun seed() {
         if (!seedDefaultRules) {
