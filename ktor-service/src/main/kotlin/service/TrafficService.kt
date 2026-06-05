@@ -123,7 +123,7 @@ class TrafficService(
                 attackerIp = ip,
                 targetUri = uri,
                 actionTaken = action,
-                headersDump = extractTrafficLog(call, body).headers
+                payloadDump = extractTrafficLog(call, body).headers
             )
             kafkaProducer.send(TOPIC_INCIDENT, incident)
         }
