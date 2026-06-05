@@ -18,9 +18,9 @@
 Система построена на микросервисной архитектуре с четким разделением на "горячий" и "холодный" контуры:
 
 1. **Nginx:** балансировщик, терминирует SSL и передает заголовки.
-2. **Ktor Gateway:** Ядро WAF. Перехватывает HTTP-запросы, выполняет быструю проверку по кэшу (Fast-Path) и асинхронно проксирует трафик на защищаемый бэкенд.
+2. **Ktor Gateway:** Ядро WAF. Выполняет быструю проверку по кэшу, применяет L7-правила (в т.ч. к телу запроса), асинхронно шлет копии трафика в Kafka и проксирует "чистый" трафик на защищаемый сервер.
 3. **Apache Kafka:** Брокер сообщений для асинхронной передачи слепков трафика (метаданные + фрагменты body) из Gateway в ML-сервис (Fire-and-Forget).
-4. **ML Service (Python):** Читает логи из Kafka, анализирует признаки и принимает решение о блокировке.
+4. **ML Service (FastAPI):** Python-модуль на базе `IsolationForest`. Извлекает фичи (Shannon entropy, спецсимволы), выявляет аномалии и отправляет команды на блокировку в Redis.
 5. **Alerting Service:** Python-воркер. Агрегирует инциденты из Kafka (алгоритм Sliding Window) и отправляет критические уведомления в Telegram.
 6. **Redis:** Используется для 3-уровневой системы банов (IP, JWT, Fingerprint), In-memory кэширования статических правил и атомарного Rate Limiting (через Lua-скрипты).
 7. **PostgreSQL & Spring Boot:** Хранилище для долговременного аудита безопасности, хранения статических правил и админ-панели (с использованием Flyway миграций).
@@ -30,13 +30,16 @@
 *   **Backend (Admin Panel):** Java/Kotlin, Spring Boot, Spring Data JPA, Flyway.
 *   **Infrastructure:** Docker, Docker Compose, Nginx.
 *   **Data Stores:** PostgreSQL (Cold data), Redis (Hot data).
-*   **ML & Analytics:** Python (в разработке).
-*   **Frontend (Admin Panel):** TS, React
+*   **ML & Analytics:** Python, FastAPI, Scikit-learn (`IsolationForest`, `TF-IDF`), joblib, locust.
+*   **Frontend (Admin Panel):** TS, React, Tailwind CSS, react-i18next (i18n).
 
 ## Текущий статус (Что реализовано)
 
-- [x] **Real-Time Dashboard:** Разработан React-фронтенд с потоковой передачей данных об инцидентах через Server-Sent Events (SSE), позволяющий мониторить атаки в реальном времени без поллинга.
-- [x] **Traffic Pipeline:** Реализован перехват запросов в Ktor, извлечение L7-метаданных и проксирование трафика.
+- [x] **Real-Time Dashboard:** Разработан React-фронтенд с потоковой передачей данных об инцидентах через Server-Sent Events (SSE), позволяющий мониторить атаки в реальном времени без поллинга. Есть возможность настраивать правила, blacklist/whitelist, настройки WAF. Языки: Rus/Eng.
+- [x] **Deep Payload Inspection (DPI):** Инспекция тела запроса на лету (`Target.BODY`). Реализовано умное кэширование Payload (до 16 КБ) с передачей по ссылке для избежания `OutOfMemoryError` и "Double Read" проблемы при проксировании.
+- [x] **Smart Reverse Proxy:** Настроен HTTP-клиент Ktor с фильтрацией Hop-by-hop заголовков, отключением генерации исключений на ошибки бэкенда и потоковой передачей ответов (Zero-Copy).
+- [x] **AI Anomaly Detection:** Реализован и обучен (датасет CSIC 2010) пайплайн ML-модели на базе `IsolationForest`. Извлечение фичей включает URL-декодирование, расчет энтропии Шеннона и весовые коэффициенты спецсимволов. Настроены эндпоинты для управления (`/model/reload`).
+- [x] **Dynamic Routing & Cache Warmup:** Поддержка проброса целевого бэкенда (`targetUrl`) "на лету" из Spring в Ktor. Реализован синхронный прогрев кэшей правил и настроек (`runBlocking`) при старте Gateway.
 - [x] **Оптимизированный Redis-клиент:** Написан потокобезопасный неблокирующий клиент на базе Lettuce (CompletableFuture API + Coroutines). Реализована агрегация запросов для минимизации Network Latency.
 - [x] **Fail-Open Design:** Внедрена стратегия отказоустойчивости. При падении Redis или Kafka, WAF пропускает трафик, чтобы не прерывать бизнес-процессы (graceful degradation).
 - [x] **Rate Limiting:** Добавление модуля защиты от логического брутфорса на стороне Ktor.
