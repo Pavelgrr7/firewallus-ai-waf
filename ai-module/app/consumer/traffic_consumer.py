@@ -6,6 +6,7 @@ from aiokafka import AIOKafkaConsumer
 
 from app.config import settings
 from app.features.pipeline import feature_pipeline
+from app.ml.actions import handle_detection
 from app.schemas.traffic import TrafficEvent
 
 logger = logging.getLogger(__name__)
@@ -38,6 +39,7 @@ class TrafficConsumer:
                         "Processed event: ip=%s uri=%s features_dim=%d",
                         event.ip, event.uri, len(features),
                     )
+                    await handle_detection(event, features)
                 except Exception:
                     logger.exception("Failed to process message: %s", msg.value)
         except asyncio.CancelledError:

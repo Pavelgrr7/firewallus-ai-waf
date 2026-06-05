@@ -9,6 +9,7 @@ from app.config import settings
 from app.consumer.traffic_consumer import traffic_consumer
 from app.features.vectorizer import tfidf_vectorizer
 from app.ml.detector import detector
+from app.services import kafka_producer, redis_client
 
 logging.basicConfig(
     level=logging.INFO,
@@ -21,11 +22,12 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     tfidf_vectorizer.load()
     detector.load()
+    await kafka_producer.start()
     await traffic_consumer.start()
     logger.info("AI Brain started")
     yield
     await traffic_consumer.stop()
-    from app.services import redis_client
+    await kafka_producer.stop()
     await redis_client.close()
     logger.info("AI Brain stopped")
 
