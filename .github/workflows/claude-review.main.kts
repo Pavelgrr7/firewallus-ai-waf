@@ -53,7 +53,7 @@ val myWorkflow = workflow(
 
         // Анализ от клода
         val reviewSonnet = uses(
-            name = "Run Claude Code Review (Sonnet)",
+            name = "Run Claude Code Review (opus)",
             continueOnError = true,
             action = CustomAction(
                 actionOwner = "anthropics",
@@ -63,7 +63,7 @@ val myWorkflow = workflow(
                     "anthropic_api_key" to expr("secrets.ANTHROPIC_API_KEY"),
                     "github_token" to expr("secrets.GITHUB_TOKEN"),
                     "prompt" to expr("env.CLAUDE_PROMPT"),
-                    "claude_args" to "--model claude-sonnet-4.6 --allowed-tools \"Write,Read\"",
+                    "claude_args" to "--model claude-opus-4.6 --allowed-tools \"Write,Read\"",
                     "show_full_output" to "true"
                 )
             ),

@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 
 class WafConfigManager(
     private val redisWafClient: RedisWafClient
@@ -25,11 +26,16 @@ class WafConfigManager(
     val activeRules: StateFlow<List<WafRule>> = _activeRules
 
     init {
+        runBlocking {
+            _settings.value = runCatching { redisWafClient.getSettings() }.getOrNull() ?: _settings.value
+            _activeRules.value = runCatching { redisWafClient.getActiveRules() }.getOrDefault(emptyList())
+        }
+
         scope.launch {
             while (isActive) {
+                delay(10_000)
                 _settings.value = runCatching { redisWafClient.getSettings() }.getOrNull() ?: _settings.value
                 _activeRules.value = runCatching { redisWafClient.getActiveRules() }.getOrDefault(_activeRules.value)
-                delay(10_000)
             }
         }
     }

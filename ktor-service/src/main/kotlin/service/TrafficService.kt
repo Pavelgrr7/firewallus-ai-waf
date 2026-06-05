@@ -45,7 +45,9 @@ class TrafficService(
 
         // Проверка белого списка -> проверка банов -> проверка rate limit -> проврка правил
 
-        val isWhitelisted = redisWafClient.isWhitelisted(identity.ip)
+        val isWhitelisted = runCatching { redisWafClient.isWhitelisted(identity.ip) }
+            .onFailure { logger.error("Failed to check whitelist for IP ${identity.ip}", it) }
+            .getOrDefault(false)
         if (isWhitelisted) {
             logger.debug("IP ${identity.ip} is whitelisted. Bypassing WAF.")
             proxyToBackend(settings.targetUrl, call, null)
@@ -63,7 +65,8 @@ class TrafficService(
 
         val activeRules = configManager.activeRules.value
 
-        val isRateLimited = runCatching { redisWafClient.isRateLimited(ip, settings.limit, settings.window) }
+        val path = call.request.uri.substringBefore('?')
+        val isRateLimited = runCatching { redisWafClient.isRateLimited(ip, path, settings.limit, settings.window) }
             .getOrDefault(false) // Fail-Open
 
         if (isRateLimited) {

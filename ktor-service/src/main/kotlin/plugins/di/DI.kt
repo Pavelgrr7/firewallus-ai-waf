@@ -38,6 +38,9 @@ fun Application.configureDI() {
         single { RedisWafClient(redisUri) } onCloseWith lifecycleLogger
         single { KafkaTrafficProducer(bootstrapServers) } onCloseWith lifecycleLogger
         single { HttpClient(CIO) {
+
+            expectSuccess = false
+
             install(ContentNegotiation) {
                 json(
                     Json {

@@ -7,6 +7,7 @@ on:
   push:
     branches:
     - 'main'
+    - 'dev'
   workflow_dispatch: {}
 jobs:
   run-gatling:
@@ -38,6 +39,8 @@ jobs:
         DEFAULT_REDIS_HOST: '${{ secrets.DEFAULT_REDIS_HOST }}'
         DEFAULT_REDIS_PORT: '${{ secrets.DEFAULT_REDIS_PORT }}'
         SEED_DEFAULT_RULES: '${{ secrets.SEED_DEFAULT_RULES }}'
+        TARGET_PORT: '8080'
+        WAF_DEFAULT_TARGET_URL: 'http://target-backend:8080'
         WAF_DEFAULT_RATE_LIMIT_REQUESTS: '100'
         WAF_DEFAULT_RATE_LIMIT_WINDOW: '60'
       run: 'docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d --wait'
