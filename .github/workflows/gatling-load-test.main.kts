@@ -22,7 +22,7 @@ if (currentDir != "workflows") {
 val myWorkflow = workflow(
     name = "Gatling Load Test",
     on = listOf(
-        Push(branches = listOf("main", "dev")),
+        Push(branches = listOf("main", "dev", "chore/fix-gatling-1-spammer-issue")),
         WorkflowDispatch()
     ),
     sourceFile = __FILE__.toPath().toAbsolutePath()
