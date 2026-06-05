@@ -6,5 +6,6 @@ CREATE TABLE waf_settings (
                               adaptive_mode_enabled BOOLEAN NOT NULL DEFAULT false, -- на будущее
 
                               updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-                              updated_by UUID REFERENCES admins(admin_id) ON DELETE SET NULL
+                              updated_by UUID REFERENCES admins(admin_id) ON DELETE SET NULL,
+                              target_url VARCHAR(255) NOT NULL
 );
