@@ -20,3 +20,4 @@ class TrafficEvent(BaseModel):
     ip: str
     method: HttpMethod
     uri: str
+    bodySnippet: str | None = None

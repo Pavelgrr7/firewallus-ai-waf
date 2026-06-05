@@ -7,15 +7,15 @@ from app.schemas.traffic import HttpMethod, TrafficEvent
 
 SUSPICIOUS_EXTENSIONS = {".php", ".env", ".bak", ".sql", ".conf", ".ini", ".log", ".old"}
 
-SPECIAL_CHARS = ["'", '"', "<", ">", ";", "|", "\\", "`", "$", "!", "{", "}", "(", ")"]
+SPECIAL_CHARS = ["'", "<", ">", ";", "|", "\\", "`", "$", "!", "(", ")"]
 SPECIAL_PATTERNS = ["--", "/*", "*/", "../", "0x", "%00", "%27", "%3C", "%3E"]
 
 METHOD_LIST = list(HttpMethod)
 
 
 def _shannon_entropy(s: str) -> float:
-    if not s:
-        return 0.0
+    if not s or len(s) <= 1:
+        return 3.0
     freq = {}
     for c in s:
         freq[c] = freq.get(c, 0) + 1
@@ -31,17 +31,12 @@ def extract_static_features(event: TrafficEvent) -> np.ndarray:
 
     features = []
 
-    features.append(len(full_uri))
-    features.append(path.count("/"))
-    params = parse_qs(query)
-    features.append(len(params))
-    total_param_len = sum(len(v) for vals in params.values() for v in vals)
-    features.append(total_param_len)
-
-    for ch in SPECIAL_CHARS:
-        features.append(full_uri.count(ch))
-    for pat in SPECIAL_PATTERNS:
-        features.append(full_uri.lower().count(pat))
+    # Duplicate special chars and patterns to increase their weight in Isolation Forest
+    for _ in range(3):
+        for ch in SPECIAL_CHARS:
+            features.append(full_uri.count(ch))
+        for pat in SPECIAL_PATTERNS:
+            features.append(full_uri.lower().count(pat))
 
     features.append(_shannon_entropy(full_uri))
     features.append(_shannon_entropy(path))

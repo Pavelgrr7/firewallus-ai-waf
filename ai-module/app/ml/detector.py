@@ -10,8 +10,9 @@ DEFAULT_MODEL_PATH = "models/detector.joblib"
 
 # Steepness of the sigmoid mapping IsolationForest.decision_function (~[-0.5, 0.5])
 # onto a [0, 1] anomaly-confidence score.
-# TODO: Провести калибровку на валидационном наборе, чтобы выбрать оптимальное значение.
-_ANOMALY_SCALE = 10.0
+_ANOMALY_SCALE = 20.0
+# Offset to shift the decision boundary
+_ANOMALY_OFFSET = 0.02
 
 
 class AnomalyDetector:
@@ -46,11 +47,15 @@ class AnomalyDetector:
             return None
 
         row = features.reshape(1, -1)
-        prediction = int(self._model.predict(row)[0])
+        raw = float(self._model.decision_function(row)[0])
+        
+        # Shift the decision boundary
+        shifted_raw = raw - _ANOMALY_OFFSET
+        prediction = 1 if shifted_raw >= 0 else -1
+        
         # decision_function: positive => normal, negative => anomaly.
         # Negate so the sigmoid grows as the sample looks more anomalous.
-        raw = float(self._model.decision_function(row)[0])
-        confidence = 1.0 / (1.0 + math.exp(_ANOMALY_SCALE * raw))
+        confidence = 1.0 / (1.0 + math.exp(_ANOMALY_SCALE * shifted_raw))
         return prediction, confidence
 
 

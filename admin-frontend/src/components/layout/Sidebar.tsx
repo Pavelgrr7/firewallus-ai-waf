@@ -1,26 +1,29 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { LayoutDashboard, Shield, Settings, ShieldCheck, Lock, History } from 'lucide-react';
 
 interface NavItem {
-  label: string;
+  key: string;
   path: string;
   icon: React.ReactNode;
   badge?: string;
 }
 
 const navItems: NavItem[] = [
-  { label: 'Dashboard', path: '/', icon: <LayoutDashboard size={20} /> },
-  { label: 'Rule Management', path: '/rules', icon: <Shield size={20} /> },
-  { label: 'Access Control', path: '/access-control', icon: <Lock size={20} /> },
-  { label: 'Audit Logs', path: '/audit-logs', icon: <History size={20} /> },
-  { label: 'Settings', path: '/settings', icon: <Settings size={20} /> },
+  { key: 'dashboard', path: '/', icon: <LayoutDashboard size={20} /> },
+  { key: 'rule_management', path: '/rules', icon: <Shield size={20} /> },
+  { key: 'access_control', path: '/access-control', icon: <Lock size={20} /> },
+  { key: 'audit_logs', path: '/audit-logs', icon: <History size={20} /> },
+  { key: 'settings', path: '/settings', icon: <Settings size={20} /> },
 ];
 
 /**
  * Sidebar — fixed left navigation with links and branding.
  */
 const Sidebar: React.FC = () => {
+  const { t } = useTranslation();
+
   return (
     <aside className="fixed left-0 top-0 h-screen w-64 bg-cyber-800/80 backdrop-blur-xl border-r border-glass-border flex flex-col z-30">
       {/* Brand */}
@@ -30,7 +33,7 @@ const Sidebar: React.FC = () => {
         </div>
         <div>
           <h1 className="text-base font-bold text-white tracking-tight">Firewallus</h1>
-          <p className="text-[11px] text-cyber-300 font-medium tracking-wider uppercase">WAF Admin</p>
+          <p className="text-[11px] text-cyber-300 font-medium tracking-wider uppercase">{t('sidebar.waf_admin')}</p>
         </div>
       </div>
 
@@ -52,7 +55,7 @@ const Sidebar: React.FC = () => {
             <span className="group-hover:scale-110 transition-transform duration-200">
               {item.icon}
             </span>
-            <span>{item.label}</span>
+            <span>{t(`sidebar.${item.key}`)}</span>
             {item.badge && (
               <span className="ml-auto text-[10px] font-semibold uppercase tracking-wide bg-cyber-600 text-cyber-300 px-2 py-0.5 rounded-full">
                 {item.badge}

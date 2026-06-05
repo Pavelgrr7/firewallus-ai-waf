@@ -1,19 +1,21 @@
 package com.pavelryzh.firewallus.incident.api
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.pavelryzh.firewallus.incident.domain.Incident
 import com.pavelryzh.firewallus.rule.domain.IpAddress
 import java.time.Instant
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 data class IncidentEventDto(
     val incidentType: String,
     val attackerIp: String,
-    val targetUri: String,
-    val actionTaken: String,
     val confidenceScore: Float? = null,
+    val targetUri: String? = null,
+    val actionTaken: String? = null,
 
-    @JsonProperty("headers_dump")
-    val payloadDump: Map<String, String>
+    @JsonProperty("payload_dump")
+    val payloadDump: Map<String, String>? = null
 ) {
     init {
         require(incidentType.isNotBlank()) { "incidentType cannot be blank" }
@@ -31,12 +33,17 @@ data class IncidentResponseDto(
 )
 
 fun IncidentEventDto.toEntity(): Incident = Incident(
-    incidentType = incidentType,
-    attackerIp = IpAddress(this.attackerIp),
-    targetUri = targetUri,
-    actionTaken = actionTaken,
-    confidenceScore = confidenceScore,
-    payloadDump = payloadDump,
+        incidentType = this.incidentType,
+        attackerIp = IpAddress(this.attackerIp),
+        
+        targetUri = this.targetUri ?: this.payloadDump?.get("uri") ?: "UNKNOWN",
+        
+        confidenceScore = this.confidenceScore,
+
+        actionTaken = this.actionTaken ?: "BLOCK",
+    
+        
+        payloadDump = this.payloadDump ?: emptyMap()
 )
 
 fun Incident.toDto(): IncidentResponseDto {

@@ -1,0 +1,181 @@
+{
+  "sidebar": {
+    "dashboard": "Dashboard",
+    "rule_management": "Rule Management",
+    "access_control": "Access Control",
+    "audit_logs": "Audit Logs",
+    "settings": "Settings",
+    "waf_admin": "WAF Admin"
+  },
+  "header": {
+    "system_status": "System Status",
+    "live_feed": "Live Incident Feed",
+    "connected": "Connected",
+    "disconnected": "Disconnected",
+    "logout": "Logout",
+    "admin": "Admin"
+  },
+  "common": {
+    "loading": "Loading...",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "save": "Save Changes",
+    "create": "Create",
+    "delete": "Delete",
+    "remove": "Remove",
+    "actions": "Actions",
+    "refresh": "Refresh",
+    "status": "Status",
+    "no_description": "No description provided",
+    "system_seeding": "System Seeding",
+    "logout": "Logout"
+  },
+  "dashboard": {
+    "title": "WAF Dashboard",
+    "stats": {
+      "total_requests": "Total Requests",
+      "total_requests_sub": "Analyzed by WAF proxy",
+      "ml_blocked": "AI ML Blocked",
+      "ml_blocked_sub": "Anomalies caught by Model",
+      "static_blocked": "Static Rules Blocked",
+      "static_blocked_sub": "Matched signature rules",
+      "redis_rate": "Redis Rate (Lua)",
+      "redis_rate_sub": "Operations per second"
+    },
+    "timeline": {
+      "title": "Threat Timeline",
+      "subtitle": "Blocked events per minute",
+      "ai_engine": "AI Engine",
+      "signatures": "Signatures",
+      "loading": "Loading timeline..."
+    },
+    "distribution": {
+      "title": "Attack Distribution",
+      "loading": "Loading distribution...",
+      "no_data": "No attack data recorded yet"
+    },
+    "top_ips": {
+      "title": "Top Blocked IPs",
+      "loading": "Loading IPs...",
+      "no_data": "No IP blocks recorded",
+      "blocks": "Blocks"
+    },
+    "actions_chart": {
+      "title": "Action Metrics",
+      "loading": "Loading actions...",
+      "no_data": "No action metrics recorded",
+      "count": "Count"
+    },
+    "incidents": {
+      "title": "Recent Incidents",
+      "subtitle": "Last registered events on WAF",
+      "view_full": "View Full Logs",
+      "loading": "Loading rows...",
+      "no_incidents": "No security incidents recorded.",
+      "cols": {
+        "time": "Time",
+        "ip": "Client IP",
+        "uri": "URI",
+        "classification": "Classification",
+        "result": "Result"
+      }
+    }
+  },
+  "rules": {
+    "title": "WAF Protection Rules",
+    "signature_rules": "Signature Rules",
+    "rules_configured_one": "{{count}} rule configured",
+    "rules_configured_other": "{{count}} rules configured",
+    "load_defaults": "Load Default Rules",
+    "add_rule": "Add Rule",
+    "search_placeholder": "Search by name, action or condition value...",
+    "loading_rules": "Loading signature rules...",
+    "no_rules": "No rules match your filters",
+    "clear_search": "Try clearing your search term.",
+    "cols": {
+      "status": "Status",
+      "name": "Rule Name",
+      "action": "Action",
+      "conditions": "Conditions Count"
+    },
+    "conditions_count_one": "{{count}} condition",
+    "conditions_count_other": "{{count}} conditions",
+    "edit_tooltip": "Edit Rule",
+    "delete_tooltip": "Delete Rule",
+    "modal": {
+      "create_title": "New Rule",
+      "edit_title": "Edit Rule",
+      "rule_name": "Rule Name",
+      "rule_name_placeholder": "e.g. Block SQLMap Scanners",
+      "action": "Action",
+      "conditions": "Conditions",
+      "and_logic": "(AND logic)",
+      "add_condition": "Add",
+      "enable_immediately": "Enable immediately",
+      "errors": {
+        "name_required": "Name is required",
+        "name_max": "Max 64 characters",
+        "conditions_required": "All condition fields are required",
+        "save_failed": "Failed to save rule. Please try again."
+      }
+    },
+    "delete_modal": {
+      "title": "Delete Signature Rule",
+      "subtitle": "This action is irreversible.",
+      "description": "Are you sure you want to delete rule \"{{name}}\"? Any traffic matching this signature will no longer be intercepted.",
+      "confirm": "Delete",
+      "cancel": "Cancel"
+    },
+    "condition": {
+      "condition_label": "Condition {{num}}",
+      "target": "Target",
+      "operator": "Operator",
+      "header_name": "Header Name",
+      "header_placeholder": "e.g. User-Agent",
+      "value": "Value",
+      "value_placeholder": "e.g. sqlmap, /admin/*, 192.168.1.1"
+    }
+  },
+  "access_control": {
+    "title": "Access Control",
+    "ip_lists": "IP Lists",
+    "loading": "Loading...",
+    "addresses_count_one": "{{count}} address in current list",
+    "addresses_count_other": "{{count}} addresses in current list",
+    "add_ip": "Add IP Address",
+    "search_placeholder": "Search by IP address or description...",
+    "loading_addresses": "Loading addresses...",
+    "no_matches": "No matches found in active filter",
+    "no_ips_yet": "No IPs in your {{tab}} yet",
+    "add_ip_helper": "Click Add IP Address to register a custom bypass/block rule.",
+    "cols": {
+      "ip": "IP Address",
+      "type": "List Type",
+      "description": "Description",
+      "added_at": "Added At"
+    },
+    "remove_tooltip": "Remove Rule",
+    "modal": {
+      "title": "Add IP Address",
+      "ip_address": "IP Address",
+      "ip_placeholder": "e.g. 192.168.1.100 or 2001:db8::1",
+      "list_type": "List Type",
+      "description": "Description",
+      "desc_placeholder": "Provide context...",
+      "add_to_list": "Add to List",
+      "errors": {
+        "ip_required": "IP Address is required",
+        "ip_invalid": "Invalid IP Address format (IPv4 or IPv6 expected)",
+        "desc_max": "Max 255 characters",
+        "add_failed": "Failed to add IP address."
+      }
+    },
+    "delete_modal": {
+      "title": "Remove from {{tab}}",
+      "subtitle": "This action is irreversible.",
+      "description": "Are you sure you want to remove IP address {{ip}} from the {{tab}}?",
+      "confirm": "Remove",
+      "cancel": "Cancel"
+    }
+  }
+}

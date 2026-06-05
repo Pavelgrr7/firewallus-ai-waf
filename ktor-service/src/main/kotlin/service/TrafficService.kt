@@ -41,6 +41,8 @@ class TrafficService(
         val identity = IdentityExtractor.extract(call)
         val ip = identity.ip
 
+        logger.info("handling request, $identity, $ip")
+
         val settings = configManager.settings.value
 
         // Проверка белого списка -> проверка банов -> проверка rate limit -> проврка правил
@@ -123,7 +125,7 @@ class TrafficService(
                 attackerIp = ip,
                 targetUri = uri,
                 actionTaken = action,
-                headersDump = extractTrafficLog(call, body).headers
+                payloadDump = extractTrafficLog(call, body).headers
             )
             kafkaProducer.send(TOPIC_INCIDENT, incident)
         }

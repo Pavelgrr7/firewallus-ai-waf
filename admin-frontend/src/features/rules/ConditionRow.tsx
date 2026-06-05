@@ -1,5 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import { X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { Condition, Target, Operator } from '../../services/ruleService';
 
 export const TARGETS: Target[] = ['IP', 'URI', 'HEADER', 'METHOD'];
@@ -23,6 +24,7 @@ export default function ConditionRow({
   onRemove,
   canRemove,
 }: ConditionRowProps) {
+  const { t } = useTranslation();
   const selClass =
     'w-full rounded-lg border border-cyber-500 bg-cyber-800/60 px-3 py-2 text-sm text-cyber-550 focus:outline-none focus:ring-2 focus:ring-accent-blue/50 focus:border-accent-blue transition-all cursor-pointer text-white';
 
@@ -30,7 +32,7 @@ export default function ConditionRow({
     <div className="p-3 rounded-lg border border-cyber-600/50 bg-cyber-800/30 space-y-2">
       <div className="flex items-center justify-between">
         <span className="text-xs font-semibold text-cyber-300 uppercase tracking-wider">
-          Condition {idx + 1}
+          {t('rules.condition.condition_label', { num: idx + 1 })}
         </span>
         {canRemove && (
           <button
@@ -44,7 +46,7 @@ export default function ConditionRow({
       </div>
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="block text-xs text-cyber-400 mb-1">Target</label>
+          <label className="block text-xs text-cyber-400 mb-1">{t('rules.condition.target')}</label>
           <select
             className={selClass}
             value={cond.target}
@@ -57,15 +59,15 @@ export default function ConditionRow({
               });
             }}
           >
-            {TARGETS.map((t) => (
-              <option key={t} value={t} className="bg-cyber-800">
-                {t}
+            {TARGETS.map((targetVal) => (
+              <option key={targetVal} value={targetVal} className="bg-cyber-800">
+                {targetVal}
               </option>
             ))}
           </select>
         </div>
         <div>
-          <label className="block text-xs text-cyber-400 mb-1">Operator</label>
+          <label className="block text-xs text-cyber-400 mb-1">{t('rules.condition.operator')}</label>
           <select
             className={selClass}
             value={cond.operator}
@@ -83,20 +85,20 @@ export default function ConditionRow({
       </div>
       {cond.target === 'HEADER' && (
         <div>
-          <label className="block text-xs text-cyber-400 mb-1">Header Name</label>
+          <label className="block text-xs text-cyber-400 mb-1">{t('rules.condition.header_name')}</label>
           <input
             className="w-full rounded-lg border border-cyber-500 bg-cyber-800/60 px-3 py-2 text-sm text-cyber-50 placeholder-cyber-500 focus:outline-none focus:ring-2 focus:ring-accent-blue/50 focus:border-accent-blue transition-all"
-            placeholder="e.g. User-Agent"
+            placeholder={t('rules.condition.header_placeholder')}
             value={cond.target_key ?? ''}
             onChange={(e) => onChange(idx, { ...cond, target_key: e.target.value })}
           />
         </div>
       )}
       <div>
-        <label className="block text-xs text-cyber-400 mb-1">Value</label>
+        <label className="block text-xs text-cyber-400 mb-1">{t('rules.condition.value')}</label>
         <input
           className="w-full rounded-lg border border-cyber-500 bg-cyber-800/60 px-3 py-2 text-sm text-cyber-50 placeholder-cyber-500 focus:outline-none focus:ring-2 focus:ring-accent-blue/50 focus:border-accent-blue transition-all"
-          placeholder="e.g. sqlmap, /admin/*, 192.168.1.1"
+          placeholder={t('rules.condition.value_placeholder')}
           value={cond.value}
           onChange={(e) => onChange(idx, { ...cond, value: e.target.value })}
         />

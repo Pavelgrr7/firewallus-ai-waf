@@ -19,7 +19,9 @@ async def handle_detection(event: TrafficEvent, features):
     prediction, confidence = result
 
     # IsolationForest convention: -1 marks an anomaly.
+    logger.info("Prediction: %s, Confidence: %s", prediction, confidence)
     if prediction != -1:
+        logger.info("No anomaly detected")
         return
 
     logger.warning(

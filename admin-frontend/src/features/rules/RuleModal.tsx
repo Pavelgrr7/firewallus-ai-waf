@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AlertTriangle, Plus, Shield, X } from 'lucide-react';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
@@ -27,6 +28,7 @@ interface RuleModalProps {
  * Modal dialog for creating or editing WAF rules.
  */
 export default function RuleModal({ rule, onClose, onSaved }: RuleModalProps) {
+  const { t } = useTranslation();
   const isEdit = rule !== null;
   const [name, setName] = useState(rule?.name ?? '');
   const [action, setAction] = useState<Action>(rule?.action ?? 'BLOCK');
@@ -44,14 +46,14 @@ export default function RuleModal({ rule, onClose, onSaved }: RuleModalProps) {
 
   const validate = () => {
     const e: Record<string, string> = {};
-    if (!name.trim()) e.name = 'Name is required';
-    else if (name.length > 64) e.name = 'Max 64 characters';
+    if (!name.trim()) e.name = t('rules.modal.errors.name_required');
+    else if (name.length > 64) e.name = t('rules.modal.errors.name_max');
     if (
       conditions.some(
         (c) => !c.value.trim() || (c.target === 'HEADER' && !c.target_key?.trim())
       )
     ) {
-      e.conditions = 'All condition fields are required';
+      e.conditions = t('rules.modal.errors.conditions_required');
     }
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -72,7 +74,7 @@ export default function RuleModal({ rule, onClose, onSaved }: RuleModalProps) {
       }
       onSaved(saved);
     } catch {
-      setErrors({ submit: 'Failed to save rule. Please try again.' });
+      setErrors({ submit: t('rules.modal.errors.save_failed') });
     } finally {
       setLoading(false);
     }
@@ -87,7 +89,7 @@ export default function RuleModal({ rule, onClose, onSaved }: RuleModalProps) {
   }, [onClose]);
 
   const selectClass =
-    'w-full rounded-lg border border-cyber-500 bg-cyber-800/60 px-4 py-2.5 text-sm text-cyber-50 focus:outline-none focus:ring-2 focus:ring-accent-blue/50 focus:border-accent-blue transition-all cursor-pointer';
+    'w-full rounded-lg border border-cyber-500 bg-cyber-800/60 px-4 py-2.5 text-sm text-cyber-550 focus:outline-none focus:ring-2 focus:ring-accent-blue/50 focus:border-accent-blue transition-all cursor-pointer text-white';
 
   return (
     <div
@@ -105,7 +107,7 @@ export default function RuleModal({ rule, onClose, onSaved }: RuleModalProps) {
               <Shield size={16} className="text-accent-purple" />
             </div>
             <h2 className="text-base font-semibold text-white">
-              {isEdit ? 'Edit Rule' : 'New Rule'}
+              {isEdit ? t('rules.modal.edit_title') : t('rules.modal.create_title')}
             </h2>
           </div>
           <button onClick={onClose} className="text-cyber-300 hover:text-white transition-colors cursor-pointer">
@@ -116,8 +118,8 @@ export default function RuleModal({ rule, onClose, onSaved }: RuleModalProps) {
         <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4 overflow-y-auto">
           <Input
             id="rule-name"
-            label="Rule Name"
-            placeholder="e.g. Block SQLMap Scanners"
+            label={t('rules.modal.rule_name')}
+            placeholder={t('rules.modal.rule_name_placeholder')}
             value={name}
             onChange={(e) => setName(e.target.value)}
             error={errors.name}
@@ -125,7 +127,7 @@ export default function RuleModal({ rule, onClose, onSaved }: RuleModalProps) {
           />
           {/* Action */}
           <div>
-            <label className="block text-sm font-medium text-cyber-200 mb-2">Action</label>
+            <label className="block text-sm font-medium text-cyber-200 mb-2">{t('rules.modal.action')}</label>
             <select
               id="rule-action"
               value={action}
@@ -143,14 +145,14 @@ export default function RuleModal({ rule, onClose, onSaved }: RuleModalProps) {
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="text-sm font-medium text-cyber-200">
-                Conditions <span className="text-cyber-400 text-xs">(AND logic)</span>
+                {t('rules.modal.conditions')} <span className="text-cyber-400 text-xs">{t('rules.modal.and_logic')}</span>
               </label>
               <button
                 type="button"
                 onClick={addCondition}
                 className="flex items-center gap-1 text-xs text-accent-blue hover:text-accent-cyan transition-colors cursor-pointer"
               >
-                <Plus size={13} /> Add
+                <Plus size={13} /> {t('rules.modal.add_condition')}
               </button>
             </div>
             <div className="space-y-2">
@@ -175,7 +177,7 @@ export default function RuleModal({ rule, onClose, onSaved }: RuleModalProps) {
           {/* Active toggle (create only) */}
           {!isEdit && (
             <div className="flex items-center justify-between py-1">
-              <span className="text-sm font-medium text-cyber-200">Enable immediately</span>
+              <span className="text-sm font-medium text-cyber-200">{t('rules.modal.enable_immediately')}</span>
               <Toggle checked={is_active} onChange={() => setIsActive((v) => !v)} />
             </div>
           )}
@@ -187,10 +189,10 @@ export default function RuleModal({ rule, onClose, onSaved }: RuleModalProps) {
           )}
           <div className="flex justify-end gap-3 pt-2">
             <Button type="button" variant="ghost" size="sm" onClick={onClose} disabled={loading}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button type="submit" variant="primary" size="sm" isLoading={loading}>
-              {isEdit ? 'Save Changes' : 'Create Rule'}
+              {isEdit ? t('common.save') : t('rules.add_rule')}
             </Button>
           </div>
         </form>

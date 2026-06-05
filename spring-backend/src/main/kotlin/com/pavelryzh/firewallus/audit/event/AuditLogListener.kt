@@ -8,16 +8,20 @@ import com.pavelryzh.firewallus.blacklist.event.ManagedIpEvent
 import com.pavelryzh.firewallus.rule.event.RuleCacheEvent
 import com.pavelryzh.firewallus.settings.event.SettingsUpdatedEvent
 import com.pavelryzh.firewallus.user.event.AdminLoginEvent
-import org.springframework.context.event.EventListener
 import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Service
+import org.springframework.transaction.event.TransactionPhase
+import org.springframework.transaction.event.TransactionalEventListener
 
 @Service
 class AuditLogListener(
     private val auditLogService: AuditLogService
 ) {
     @Async
-    @EventListener
+    @TransactionalEventListener(
+        phase = TransactionPhase.AFTER_COMMIT,
+        fallbackExecution = true
+    )
     fun onRuleChanged(event: RuleCacheEvent) {
 
         val auditLog = when (event) {
@@ -44,7 +48,7 @@ class AuditLogListener(
     }
 
     @Async
-    @EventListener
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
     fun onSettingsChanged(event: SettingsUpdatedEvent) {
         val auditLog = AuditLog(
             adminId = event.adminId,
@@ -56,7 +60,7 @@ class AuditLogListener(
     }
 
     @Async
-    @EventListener
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
     fun onAdminLogin(event: AdminLoginEvent) {
         val auditLog = AuditLog(
             adminId = event.adminId,
@@ -67,7 +71,7 @@ class AuditLogListener(
         auditLogService.save(auditLog)
     }
     @Async
-    @EventListener
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
     fun onManagedIpChanged(event: ManagedIpEvent) {
 
         val auditLog = when (event) {

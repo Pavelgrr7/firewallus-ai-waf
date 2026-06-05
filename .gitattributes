@@ -1,0 +1,4 @@
+# Force Unix line endings for shell scripts and Gradle wrappers
+gradlew text eol=lf
+*.sh text eol=lf
+*.bash text eol=lf

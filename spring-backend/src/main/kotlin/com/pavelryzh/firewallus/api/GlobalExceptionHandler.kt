@@ -8,6 +8,8 @@ import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestControllerAdvice
 import java.time.Instant
 import  org.slf4j.Logger
+import org.springframework.web.context.request.async.AsyncRequestNotUsableException
+
 data class ErrorResponse(
     val error: String,
     val message: String?,
@@ -17,6 +19,11 @@ data class ErrorResponse(
 @RestControllerAdvice
 class GlobalExceptionHandler {
     private val logger: Logger = LoggerFactory.getLogger(GlobalExceptionHandler::class.java)
+
+    @ExceptionHandler(AsyncRequestNotUsableException::class)
+    fun handleAsyncRequestNotUsableException(ex: AsyncRequestNotUsableException) {
+        // Это штатное поведение: пользователь просто ушел с дашборда
+    }
 
     @ExceptionHandler(RuleNotFoundException::class)
     @ResponseStatus(HttpStatus.NOT_FOUND)

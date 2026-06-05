@@ -75,6 +75,17 @@ services:
     ports:
       - "8001:8001"
 
+  locust:
+    image: locustio/locust
+    container_name: fw-locust
+    ports:
+      - "8089:8089"
+    volumes:
+      - ./tests/locust:/mnt/locust
+    command: -f /mnt/locust/locustfile.py --host=http://nginx
+    depends_on:
+      - nginx
+
   admin-frontend:
     build: './admin-frontend'
     container_name: admin-frontend

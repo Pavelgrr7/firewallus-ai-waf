@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AlertTriangle, Shield, X } from 'lucide-react';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
@@ -20,6 +21,7 @@ interface AddIpModalProps {
  * Modal dialog to add a managed IP to blacklist or whitelist.
  */
 export default function AddIpModal({ defaultType, onClose, onSaved }: AddIpModalProps) {
+  const { t } = useTranslation();
   const [ipAddress, setIpAddress] = useState('');
   const [listType, setListType] = useState<IpListType>(defaultType);
   const [description, setDescription] = useState('');
@@ -29,12 +31,12 @@ export default function AddIpModal({ defaultType, onClose, onSaved }: AddIpModal
   const validate = () => {
     const e: Record<string, string> = {};
     if (!ipAddress.trim()) {
-      e.ipAddress = 'IP Address is required';
+      e.ipAddress = t('access_control.modal.errors.ip_required');
     } else if (!IP_REGEX.test(ipAddress.trim())) {
-      e.ipAddress = 'Invalid IP Address format (IPv4 or IPv6 expected)';
+      e.ipAddress = t('access_control.modal.errors.ip_invalid');
     }
     if (description && description.length > 255) {
-      e.description = 'Max 255 characters';
+      e.description = t('access_control.modal.errors.desc_max');
     }
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -53,7 +55,7 @@ export default function AddIpModal({ defaultType, onClose, onSaved }: AddIpModal
       onSaved(saved);
     } catch (err) {
       const axiosError = err as { response?: { data?: { message?: string } } };
-      const errMsg = axiosError.response?.data?.message || 'Failed to add IP address.';
+      const errMsg = axiosError.response?.data?.message || t('access_control.modal.errors.add_failed');
       setErrors({ submit: errMsg });
     } finally {
       setLoading(false);
@@ -86,7 +88,7 @@ export default function AddIpModal({ defaultType, onClose, onSaved }: AddIpModal
             <div className="w-8 h-8 rounded-lg bg-accent-blue/10 flex items-center justify-center">
               <Shield size={16} className="text-accent-blue" />
             </div>
-            <h2 className="text-base font-semibold text-white">Add IP Address</h2>
+            <h2 className="text-base font-semibold text-white">{t('access_control.modal.title')}</h2>
           </div>
           <button onClick={onClose} className="text-cyber-300 hover:text-white transition-colors cursor-pointer">
             <X size={20} />
@@ -97,15 +99,15 @@ export default function AddIpModal({ defaultType, onClose, onSaved }: AddIpModal
         <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
           <Input
             id="ip-address-input"
-            label="IP Address"
-            placeholder="e.g. 192.168.1.100 or 2001:db8::1"
+            label={t('access_control.modal.ip_address')}
+            placeholder={t('access_control.modal.ip_placeholder')}
             value={ipAddress}
             onChange={(e) => setIpAddress(e.target.value)}
             error={errors.ipAddress}
           />
 
           <div>
-            <label className="block text-sm font-medium text-cyber-200 mb-2">List Type</label>
+            <label className="block text-sm font-medium text-cyber-200 mb-2">{t('access_control.modal.list_type')}</label>
             <select
               id="list-type-select"
               value={listType}
@@ -122,10 +124,10 @@ export default function AddIpModal({ defaultType, onClose, onSaved }: AddIpModal
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-cyber-200 mb-2">Description</label>
+            <label className="block text-sm font-medium text-cyber-200 mb-2">{t('access_control.modal.description')}</label>
             <textarea
               id="description-input"
-              placeholder="Provide context..."
+              placeholder={t('access_control.modal.desc_placeholder')}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               className="w-full h-20 rounded-lg border border-cyber-500 bg-cyber-800/60 px-4 py-2 text-sm text-cyber-50 placeholder-cyber-500 focus:outline-none focus:ring-2 focus:ring-accent-blue/50 focus:border-accent-blue transition-all"
@@ -141,10 +143,10 @@ export default function AddIpModal({ defaultType, onClose, onSaved }: AddIpModal
 
           <div className="flex justify-end gap-3 pt-2">
             <Button type="button" variant="ghost" size="sm" onClick={onClose} disabled={loading}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button type="submit" variant="primary" size="sm" isLoading={loading}>
-              Add to List
+              {t('access_control.modal.add_to_list')}
             </Button>
           </div>
         </form>

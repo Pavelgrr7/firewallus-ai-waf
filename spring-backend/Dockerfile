@@ -4,7 +4,7 @@ WORKDIR /app
 
 COPY gradlew .
 COPY gradle/ gradle/
-RUN chmod +x gradlew
+RUN sed -i 's/\r$//' gradlew && chmod +x gradlew
 RUN --mount=type=cache,id=spring-gradle,target=/root/.gradle \
     ./gradlew --version --no-daemon
 
