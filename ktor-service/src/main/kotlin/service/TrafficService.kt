@@ -65,7 +65,8 @@ class TrafficService(
 
         val activeRules = configManager.activeRules.value
 
-        val isRateLimited = runCatching { redisWafClient.isRateLimited(ip, settings.limit, settings.window) }
+        val path = call.request.uri.substringBefore('?')
+        val isRateLimited = runCatching { redisWafClient.isRateLimited(ip, path, settings.limit, settings.window) }
             .getOrDefault(false) // Fail-Open
 
         if (isRateLimited) {
