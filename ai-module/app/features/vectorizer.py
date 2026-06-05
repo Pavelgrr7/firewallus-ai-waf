@@ -21,7 +21,7 @@ class TfidfVectorizer:
         self._vectorizer = SklearnTfidfVectorizer(
             analyzer="char_wb",
             ngram_range=(3, 5),
-            max_features=200,
+            max_features=100,
             sublinear_tf=True,
         )
         self._vectorizer.fit(texts)

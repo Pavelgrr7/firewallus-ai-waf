@@ -8,5 +8,5 @@ data class IncidentEventDto(
     val attackerIp: String,
     val targetUri: String,
     val actionTaken: String,
-    val headersDump: Map<String, String>
+    val payloadDump: Map<String, String>
 ) : KafkaEvent
