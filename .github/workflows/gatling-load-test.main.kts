@@ -22,7 +22,7 @@ if (currentDir != "workflows") {
 val myWorkflow = workflow(
     name = "Gatling Load Test",
     on = listOf(
-        Push(branches = listOf("main", "chore/load-test-pipeline-target-server")),
+        Push(branches = listOf("main", "dev")),
         WorkflowDispatch()
     ),
     sourceFile = __FILE__.toPath().toAbsolutePath()

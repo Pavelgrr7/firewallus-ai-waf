@@ -7,7 +7,7 @@ on:
   push:
     branches:
     - 'main'
-    - 'chore/load-test-pipeline-target-server'
+    - 'dev'
   workflow_dispatch: {}
 jobs:
   run-gatling:
