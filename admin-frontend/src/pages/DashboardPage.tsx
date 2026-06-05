@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Activity,
   AlertOctagon,
@@ -25,6 +25,7 @@ import Header from '../components/layout/Header';
 import Card from '../components/ui/Card';
 import { useDashboardData } from '../hooks/useDashboardData';
 import { formatNumber } from '../utils/dashboardHelpers';
+import { getRedisRate } from '../services/metricsService';
 
 const DashboardPage: React.FC = () => {
   const {
@@ -37,6 +38,26 @@ const DashboardPage: React.FC = () => {
     sseConnected,
     loading,
   } = useDashboardData();
+
+  const [redisRate, setRedisRate] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchRate = async () => {
+      try {
+        const data = await getRedisRate();
+        setRedisRate(data.rate);
+      } catch (err) {
+        console.error('Failed to fetch Redis rate', err);
+      }
+    };
+
+    fetchRate();
+    const interval = setInterval(fetchRate, 3000);
+
+    return () => {
+      clearInterval(interval);
+    };
+  }, []);
 
   // Stats are aggregated in real-time on the backend
   const attackTypes = attackDistribution;
@@ -98,11 +119,10 @@ const DashboardPage: React.FC = () => {
             accentColor="#f43f5e"
             delay={200}
           />
-          {/* Keep Redis Rate (Lua) Card completely unchanged as requested */}
           <StatCard
             title="Redis Rate (Lua)"
-            value="—"
-            subtitle="Metric not yet available"
+            value={redisRate !== null ? `${redisRate} ops/sec` : '—'}
+            subtitle="Operations per second"
             icon={<Zap size={22} />}
             accentColor="#06b6d4"
             delay={300}
