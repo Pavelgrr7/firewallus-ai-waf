@@ -8,5 +8,5 @@ data class GlobalSettings(
     @SerialName("rate_limit_requests") val limit: Int = 2000,
     @SerialName("rate_limit_window_sec") val window: Int = 60,
     @SerialName("adaptive_mode_enabled") val adaptiveMode: Boolean = false,
-    @SerialName("target_url") val targetUrl: TargetUrl = TargetUrl("http://backend:8080")
+    @SerialName("target_url") val targetUrl: TargetUrl = TargetUrl("http://target-backend:8080")
 )
