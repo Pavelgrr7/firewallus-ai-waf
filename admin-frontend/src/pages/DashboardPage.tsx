@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Activity,
   AlertOctagon,
@@ -28,6 +29,7 @@ import { formatNumber } from '../utils/dashboardHelpers';
 import { getRedisRate } from '../services/metricsService';
 
 const DashboardPage: React.FC = () => {
+  const { t } = useTranslation();
   const {
     incidents,
     timeline,
@@ -69,17 +71,17 @@ const DashboardPage: React.FC = () => {
 
   return (
     <div className="min-h-screen">
-      <Header title="WAF Dashboard" />
+      <Header title={t('dashboard.title')} />
 
       <div className="p-6 space-y-6">
         {/* Status bar */}
         <div className="flex items-center justify-between animate-fade-in bg-cyber-800/40 border border-glass-border px-4 py-3 rounded-xl">
           <div className="flex items-center gap-2">
             <Activity size={16} className="text-accent-blue" />
-            <span className="text-sm font-semibold text-white">System Status</span>
+            <span className="text-sm font-semibold text-white">{t('header.system_status')}</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-xs text-cyber-300">Live Incident Feed:</span>
+            <span className="text-xs text-cyber-300">{t('header.live_feed')}</span>
             <div className="flex items-center gap-1.5 bg-cyber-900/60 px-2.5 py-1 rounded-lg border border-glass-border">
               <span
                 className={`w-2 h-2 rounded-full ${
@@ -87,7 +89,7 @@ const DashboardPage: React.FC = () => {
                 }`}
               />
               <span className="text-[10px] font-mono font-bold text-white uppercase">
-                {sseConnected ? 'Connected' : 'Disconnected'}
+                {sseConnected ? t('header.connected') : t('header.disconnected')}
               </span>
             </div>
           </div>
@@ -96,33 +98,33 @@ const DashboardPage: React.FC = () => {
         {/* Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 animate-slide-up">
           <StatCard
-            title="Total Requests"
+            title={t('dashboard.stats.total_requests')}
             value={formatNumber(stats.total)}
-            subtitle="Analyzed by WAF proxy"
+            subtitle={t('dashboard.stats.total_requests_sub')}
             icon={<Shield size={22} />}
             accentColor="#3b82f6"
             delay={0}
           />
           <StatCard
-            title="AI ML Blocked"
+            title={t('dashboard.stats.ml_blocked')}
             value={formatNumber(stats.mlBlocked)}
-            subtitle="Anomalies caught by Model"
+            subtitle={t('dashboard.stats.ml_blocked_sub')}
             icon={<ShieldAlert size={22} />}
             accentColor="#a855f7"
             delay={100}
           />
           <StatCard
-            title="Static Rules Blocked"
+            title={t('dashboard.stats.static_blocked')}
             value={formatNumber(stats.staticBlocked)}
-            subtitle="Matched signature rules"
+            subtitle={t('dashboard.stats.static_blocked_sub')}
             icon={<AlertOctagon size={22} />}
             accentColor="#f43f5e"
             delay={200}
           />
           <StatCard
-            title="Redis Rate (Lua)"
+            title={t('dashboard.stats.redis_rate')}
             value={redisRate !== null ? `${redisRate} ops/sec` : '—'}
-            subtitle="Operations per second"
+            subtitle={t('dashboard.stats.redis_rate_sub')}
             icon={<Zap size={22} />}
             accentColor="#06b6d4"
             delay={300}
@@ -134,25 +136,25 @@ const DashboardPage: React.FC = () => {
           <div className="flex items-center justify-between mb-6">
             <div>
               <h3 className="text-sm font-bold text-white uppercase tracking-wider">
-                Threat Timeline
+                {t('dashboard.timeline.title')}
               </h3>
-              <p className="text-xs text-cyber-400">Blocked events per minute</p>
+              <p className="text-xs text-cyber-400">{t('dashboard.timeline.subtitle')}</p>
             </div>
             <div className="flex items-center gap-4 text-xs font-mono">
               <div className="flex items-center gap-1.5">
                 <span className="w-2.5 h-1.5 rounded-full bg-accent-purple" />
-                <span className="text-cyber-300">AI Engine</span>
+                <span className="text-cyber-300">{t('dashboard.timeline.ai_engine')}</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="w-2.5 h-1.5 rounded-full bg-accent-rose" />
-                <span className="text-cyber-300">Signatures</span>
+                <span className="text-cyber-300">{t('dashboard.timeline.signatures')}</span>
               </div>
             </div>
           </div>
           <div className="h-64">
             {loading ? (
               <div className="w-full h-full flex items-center justify-center text-cyber-400">
-                Loading timeline...
+                {t('dashboard.timeline.loading')}
               </div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
@@ -185,7 +187,7 @@ const DashboardPage: React.FC = () => {
                   <Area
                     type="monotone"
                     dataKey="ml"
-                    name="AI Engine"
+                    name={t('dashboard.timeline.ai_engine')}
                     stroke="#a855f7"
                     strokeWidth={2}
                     fillOpacity={1}
@@ -194,7 +196,7 @@ const DashboardPage: React.FC = () => {
                   <Area
                     type="monotone"
                     dataKey="static"
-                    name="Signatures"
+                    name={t('dashboard.timeline.signatures')}
                     stroke="#f43f5e"
                     strokeWidth={2}
                     fillOpacity={1}
@@ -211,13 +213,13 @@ const DashboardPage: React.FC = () => {
           {/* Attack Types Distribution */}
           <Card className="animate-slide-up [animation-delay:200ms] p-5">
             <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-5">
-              Attack Distribution
+              {t('dashboard.distribution.title')}
             </h3>
             <div className="h-56 flex items-center justify-center">
               {loading ? (
-                <div className="text-cyber-400">Loading distribution...</div>
+                <div className="text-cyber-400">{t('dashboard.distribution.loading')}</div>
               ) : attackTypes.length === 0 ? (
-                <div className="text-xs text-cyber-400">No attack data recorded yet</div>
+                <div className="text-xs text-cyber-400">{t('dashboard.distribution.no_data')}</div>
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
@@ -259,19 +261,19 @@ const DashboardPage: React.FC = () => {
             </div>
           </Card>
 
-          {/* Top Attacking IPs */}
+          {/* Top Blocked IPs */}
           <Card className="animate-slide-up [animation-delay:250ms] p-5">
             <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-5">
-              Top Blocked IPs
+              {t('dashboard.top_ips.title')}
             </h3>
             <div className="h-56">
               {loading ? (
                 <div className="w-full h-full flex items-center justify-center text-cyber-400">
-                  Loading IPs...
+                  {t('dashboard.top_ips.loading')}
                 </div>
               ) : topIps.length === 0 ? (
                 <div className="w-full h-full flex items-center justify-center text-xs text-cyber-400">
-                  No IP blocks recorded
+                  {t('dashboard.top_ips.no_data')}
                 </div>
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
@@ -287,7 +289,7 @@ const DashboardPage: React.FC = () => {
                       width={90}
                     />
                     <Tooltip content={<ChartTooltip />} />
-                    <Bar dataKey="value" name="Blocks" fill="#a855f7" radius={[0, 4, 4, 0]} barSize={12}>
+                    <Bar dataKey="value" name={t('dashboard.top_ips.blocks')} fill="#a855f7" radius={[0, 4, 4, 0]} barSize={12}>
                       {topIps.map((_, idx) => (
                         <Cell key={idx} fill="#a855f7" opacity={1 - idx * 0.15} />
                       ))}
@@ -301,16 +303,16 @@ const DashboardPage: React.FC = () => {
           {/* WAF Decision Actions distribution */}
           <Card className="animate-slide-up [animation-delay:300ms] p-5">
             <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-5">
-              Action Metrics
+              {t('dashboard.actions_chart.title')}
             </h3>
             <div className="h-56">
               {loading ? (
                 <div className="w-full h-full flex items-center justify-center text-cyber-400">
-                  Loading actions...
+                  {t('dashboard.actions_chart.loading')}
                 </div>
               ) : actionCounts.length === 0 ? (
                 <div className="w-full h-full flex items-center justify-center text-xs text-cyber-400">
-                  No action metrics recorded
+                  {t('dashboard.actions_chart.no_data')}
                 </div>
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
@@ -330,7 +332,7 @@ const DashboardPage: React.FC = () => {
                       allowDecimals={false}
                     />
                     <Tooltip content={<ChartTooltip />} />
-                    <Bar dataKey="value" name="Count" radius={[4, 4, 0, 0]} barSize={25}>
+                    <Bar dataKey="value" name={t('dashboard.actions_chart.count')} radius={[4, 4, 0, 0]} barSize={25}>
                       {actionCounts.map((entry, index) => {
                         const color =
                           entry.name === 'BLOCK'
@@ -353,15 +355,15 @@ const DashboardPage: React.FC = () => {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="text-sm font-bold text-white uppercase tracking-wider">
-                Recent Incidents
+                {t('dashboard.incidents.title')}
               </h3>
-              <p className="text-xs text-cyber-400">Last registered events on WAF</p>
+              <p className="text-xs text-cyber-400">{t('dashboard.incidents.subtitle')}</p>
             </div>
             <a
               href="/audit-logs"
               className="flex items-center gap-1 text-xs text-accent-blue hover:text-accent-cyan hover:underline transition-all"
             >
-              View Full Logs <ArrowRight size={13} />
+              {t('dashboard.incidents.view_full')} <ArrowRight size={13} />
             </a>
           </div>
 
@@ -369,24 +371,24 @@ const DashboardPage: React.FC = () => {
             <table className="w-full text-xs">
               <thead>
                 <tr className="border-b border-glass-border">
-                  <th className="text-left py-2 font-semibold text-cyber-300">Time</th>
-                  <th className="text-left py-2 font-semibold text-cyber-300">Client IP</th>
-                  <th className="text-left py-2 font-semibold text-cyber-300">URI</th>
-                  <th className="text-left py-2 font-semibold text-cyber-300">Classification</th>
-                  <th className="text-right py-2 font-semibold text-cyber-300">Result</th>
+                  <th className="text-left py-2 font-semibold text-cyber-300">{t('dashboard.incidents.cols.time')}</th>
+                  <th className="text-left py-2 font-semibold text-cyber-300">{t('dashboard.incidents.cols.ip')}</th>
+                  <th className="text-left py-2 font-semibold text-cyber-300">{t('dashboard.incidents.cols.uri')}</th>
+                  <th className="text-left py-2 font-semibold text-cyber-300">{t('dashboard.incidents.cols.classification')}</th>
+                  <th className="text-right py-2 font-semibold text-cyber-300">{t('dashboard.incidents.cols.result')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-glass-border/40">
                 {loading ? (
                   <tr>
                     <td colSpan={5} className="text-center py-6 text-cyber-400">
-                      Loading rows...
+                      {t('dashboard.incidents.loading')}
                     </td>
                   </tr>
                 ) : incidents.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="text-center py-6 text-cyber-400">
-                      No security incidents recorded.
+                      {t('dashboard.incidents.no_incidents')}
                     </td>
                   </tr>
                 ) : (

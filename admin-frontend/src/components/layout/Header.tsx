@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { LogOut, User } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import Button from '../ui/Button';
 
@@ -12,14 +13,12 @@ interface HeaderProps {
  */
 const Header: React.FC<HeaderProps> = ({ title }) => {
   const { user, logout } = useAuth();
-  const [lang, setLang] = useState<string>(() => {
-    return localStorage.getItem('lng') || 'EN';
-  });
+  const { t, i18n } = useTranslation();
+  const lang = (i18n.language || 'en').toUpperCase();
 
   const changeLanguage = (newLang: 'EN' | 'RU') => {
-    setLang(newLang);
+    i18n.changeLanguage(newLang.toLowerCase());
     localStorage.setItem('lng', newLang);
-    window.dispatchEvent(new Event('languagechange'));
   };
 
   return (
@@ -29,7 +28,7 @@ const Header: React.FC<HeaderProps> = ({ title }) => {
         <div>
           <h2 className="text-xl font-bold text-white">{title}</h2>
           <p className="text-xs text-cyber-400 mt-0.5">
-            {new Date().toLocaleDateString('en-US', {
+            {new Date().toLocaleDateString(lang === 'RU' ? 'ru-RU' : 'en-US', {
               weekday: 'long',
               year: 'numeric',
               month: 'long',
@@ -82,7 +81,7 @@ const Header: React.FC<HeaderProps> = ({ title }) => {
           {/* Logout */}
           <Button variant="ghost" size="sm" onClick={logout} className="gap-2">
             <LogOut size={16} />
-            <span className="hidden sm:inline">Logout</span>
+            <span className="hidden sm:inline">{t('header.logout')}</span>
           </Button>
         </div>
       </div>

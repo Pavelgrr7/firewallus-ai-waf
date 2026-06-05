@@ -8,7 +8,6 @@ import com.pavelryzh.firewallus.blacklist.event.ManagedIpEvent
 import com.pavelryzh.firewallus.rule.event.RuleCacheEvent
 import com.pavelryzh.firewallus.settings.event.SettingsUpdatedEvent
 import com.pavelryzh.firewallus.user.event.AdminLoginEvent
-import org.springframework.context.event.EventListener
 import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Service
 import org.springframework.transaction.event.TransactionPhase

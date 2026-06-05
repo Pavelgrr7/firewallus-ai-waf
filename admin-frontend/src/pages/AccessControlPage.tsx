@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Loader2,
   Plus,
@@ -20,6 +21,7 @@ import AddIpModal from '../features/access-control/AddIpModal';
 import { useManagedIps } from '../hooks/useManagedIps';
 
 const AccessControlPage: React.FC = () => {
+  const { t } = useTranslation();
   const {
     ips,
     activeTab,
@@ -46,17 +48,17 @@ const AccessControlPage: React.FC = () => {
 
   return (
     <div className="min-h-screen">
-      <Header title="Access Control" />
+      <Header title={t('access_control.title')} />
 
       <div className="p-6 space-y-5">
         {/* Top Header Section */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-fade-in">
           <div>
-            <h2 className="text-lg font-bold text-white">IP Lists</h2>
+            <h2 className="text-lg font-bold text-white">{t('access_control.ip_lists')}</h2>
             <p className="text-xs text-cyber-300 mt-0.5">
               {loading
-                ? 'Loading…'
-                : `${totalElements} address${totalElements !== 1 ? 'es' : ''} in current list`}
+                ? t('access_control.loading')
+                : t('access_control.addresses_count', { count: totalElements })}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -65,7 +67,7 @@ const AccessControlPage: React.FC = () => {
               onClick={() => fetchIps(activeTab, page, true)}
               disabled={refreshing || loading}
               className="p-2 rounded-lg text-cyber-300 hover:text-white hover:bg-cyber-700 transition-all disabled:opacity-40 cursor-pointer"
-              title="Refresh"
+              title={t('common.refresh')}
             >
               <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
             </button>
@@ -76,7 +78,7 @@ const AccessControlPage: React.FC = () => {
               onClick={() => setAddOpen(true)}
             >
               <Plus size={16} className="mr-1.5" />
-              Add IP Address
+              {t('access_control.add_ip')}
             </Button>
           </div>
         </div>
@@ -115,7 +117,7 @@ const AccessControlPage: React.FC = () => {
           <div className="flex-1 max-w-md">
             <Input
               id="acl-search"
-              placeholder="Search by IP address or description…"
+              placeholder={t('access_control.search_placeholder')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               icon={<Search size={15} />}
@@ -128,7 +130,7 @@ const AccessControlPage: React.FC = () => {
           {loading ? (
             <div className="flex items-center justify-center py-24 gap-3 text-cyber-300">
               <Loader2 size={22} className="animate-spin" />
-              <span className="text-sm">Loading addresses…</span>
+              <span className="text-sm">{t('access_control.loading_addresses')}</span>
             </div>
           ) : ips.length === 0 ? (
             <div className="text-center py-24">
@@ -143,11 +145,11 @@ const AccessControlPage: React.FC = () => {
                 )}
               </div>
               <p className="text-sm font-medium text-cyber-200">
-                {search ? 'No matches found in active filter' : `No IPs in your ${activeTab.toLowerCase()} yet`}
+                {search ? t('access_control.no_matches') : t('access_control.no_ips_yet', { tab: activeTab })}
               </p>
               {!search && (
                 <p className="text-xs text-cyber-400 mt-1">
-                  Click <span className="text-accent-blue">Add IP Address</span> to register a custom bypass/block rule.
+                  {t('access_control.add_ip_helper')}
                 </p>
               )}
             </div>
@@ -157,19 +159,19 @@ const AccessControlPage: React.FC = () => {
                 <thead>
                   <tr className="border-b border-glass-border">
                     <th className="text-left px-5 py-3.5 text-xs font-semibold text-cyber-300 uppercase tracking-wider">
-                      IP Address
+                      {t('access_control.cols.ip')}
                     </th>
                     <th className="text-left px-5 py-3.5 text-xs font-semibold text-cyber-300 uppercase tracking-wider">
-                      List Type
+                      {t('access_control.cols.type')}
                     </th>
                     <th className="text-left px-5 py-3.5 text-xs font-semibold text-cyber-300 uppercase tracking-wider">
-                      Description
+                      {t('access_control.cols.description')}
                     </th>
                     <th className="text-left px-5 py-3.5 text-xs font-semibold text-cyber-300 uppercase tracking-wider hidden md:table-cell">
-                      Added At
+                      {t('access_control.cols.added_at')}
                     </th>
                     <th className="text-right px-5 py-3.5 text-xs font-semibold text-cyber-300 uppercase tracking-wider">
-                      Actions
+                      {t('common.actions')}
                     </th>
                   </tr>
                 </thead>
@@ -214,7 +216,7 @@ const AccessControlPage: React.FC = () => {
                               <span>{ip.description}</span>
                             </>
                           ) : (
-                            <span className="text-cyber-500 italic">No description provided</span>
+                            <span className="text-cyber-500 italic">{t('common.no_description')}</span>
                           )}
                         </div>
                       </td>
@@ -224,7 +226,7 @@ const AccessControlPage: React.FC = () => {
                         <div className="flex items-center gap-2">
                           <Calendar size={13} className="text-cyber-400 shrink-0" />
                           <span>
-                            {ip.timestamp ? new Date(ip.timestamp).toLocaleString() : 'System Seeding'}
+                            {ip.timestamp ? new Date(ip.timestamp).toLocaleString() : t('common.system_seeding')}
                           </span>
                         </div>
                       </td>
@@ -235,7 +237,7 @@ const AccessControlPage: React.FC = () => {
                           id={`acl-delete-${ip.id}`}
                           onClick={() => setDeleteTarget(ip)}
                           className="p-1.5 rounded-md text-cyber-300 hover:text-accent-rose hover:bg-accent-rose/10 transition-all opacity-0 group-hover:opacity-100 cursor-pointer"
-                          title="Remove Rule"
+                          title={t('access_control.remove_tooltip')}
                         >
                           <Trash2 size={14} />
                         </button>
@@ -270,19 +272,15 @@ const AccessControlPage: React.FC = () => {
       {/* Confirm Delete Modal */}
       <ConfirmModal
         isOpen={!!deleteTarget}
-        title={`Remove from ${activeTab}`}
-        subtitle="This action is irreversible."
+        title={t('access_control.delete_modal.title', { tab: activeTab })}
+        subtitle={t('access_control.delete_modal.subtitle')}
         description={
           <>
-            Are you sure you want to remove IP address{' '}
-            <span className="font-mono font-semibold text-white">
-              {deleteTarget?.ip_address}
-            </span>{' '}
-            from the {activeTab.toLowerCase()}?
+            {t('access_control.delete_modal.description', { ip: deleteTarget?.ip_address, tab: activeTab.toLowerCase() })}
           </>
         }
-        confirmLabel="Remove"
-        cancelLabel="Cancel"
+        confirmLabel={t('access_control.delete_modal.confirm')}
+        cancelLabel={t('access_control.delete_modal.cancel')}
         variant="danger"
         isLoading={deleting}
         error={deleteError}

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Edit2,
   Loader2,
@@ -20,6 +21,7 @@ import RuleModal from '../features/rules/RuleModal';
 import { useRulesFetch } from '../hooks/useRulesFetch';
 
 const RulesPage: React.FC = () => {
+  const { t } = useTranslation();
   const {
     rules,
     rawRules,
@@ -51,17 +53,17 @@ const RulesPage: React.FC = () => {
 
   return (
     <div className="min-h-screen">
-      <Header title="WAF Protection Rules" />
+      <Header title={t('rules.title')} />
 
       <div className="p-6 space-y-5">
         {/* Title area */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-fade-in">
           <div>
-            <h2 className="text-lg font-bold text-white">Signature Rules</h2>
+            <h2 className="text-lg font-bold text-white">{t('rules.signature_rules')}</h2>
             <p className="text-xs text-cyber-300 mt-0.5">
               {loading
-                ? 'Loading…'
-                : `${totalElements} rule${totalElements !== 1 ? 's' : ''} configured`}
+                ? t('common.loading')
+                : t('rules.rules_configured', { count: totalElements })}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -70,7 +72,7 @@ const RulesPage: React.FC = () => {
               onClick={() => fetchRules(page, true)}
               disabled={refreshing || loading}
               className="p-2 rounded-lg text-cyber-300 hover:text-white hover:bg-cyber-700 transition-all disabled:opacity-40 cursor-pointer"
-              title="Refresh"
+              title={t('common.refresh')}
             >
               <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
             </button>
@@ -84,11 +86,11 @@ const RulesPage: React.FC = () => {
               >
                 {seedingDefaults ? (
                   <>
-                    <Loader2 size={16} className="mr-1.5 animate-spin" /> Load Default Rules
+                    <Loader2 size={16} className="mr-1.5 animate-spin" /> {t('rules.load_defaults')}
                   </>
                 ) : (
                   <>
-                    <Sliders size={16} className="mr-1.5" /> Load Default Rules
+                    <Sliders size={16} className="mr-1.5" /> {t('rules.load_defaults')}
                   </>
                 )}
               </Button>
@@ -99,7 +101,7 @@ const RulesPage: React.FC = () => {
               size="sm"
               onClick={() => setCreateOpen(true)}
             >
-              <Plus size={16} className="mr-1.5" /> Add Rule
+              <Plus size={16} className="mr-1.5" /> {t('rules.add_rule')}
             </Button>
           </div>
         </div>
@@ -109,7 +111,7 @@ const RulesPage: React.FC = () => {
           <div className="flex-1">
             <Input
               id="rules-search"
-              placeholder="Search by name, action or condition value…"
+              placeholder={t('rules.search_placeholder')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               icon={<Search size={15} />}
@@ -122,15 +124,15 @@ const RulesPage: React.FC = () => {
           {loading ? (
             <div className="flex items-center justify-center py-24 gap-3 text-cyber-300">
               <Loader2 size={22} className="animate-spin" />
-              <span className="text-sm">Loading signature rules…</span>
+              <span className="text-sm">{t('rules.loading_rules')}</span>
             </div>
           ) : rules.length === 0 ? (
             <div className="text-center py-24 text-cyber-400">
               <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-cyber-850 border border-glass-border flex items-center justify-center">
                 <ShieldAlert size={28} className="text-cyber-500" />
               </div>
-              <p className="text-sm font-medium">No rules match your filters</p>
-              {search && <p className="text-xs text-cyber-400 mt-1">Try clearing your search term.</p>}
+              <p className="text-sm font-medium">{t('rules.no_rules')}</p>
+              {search && <p className="text-xs text-cyber-400 mt-1">{t('rules.clear_search')}</p>}
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -138,19 +140,19 @@ const RulesPage: React.FC = () => {
                 <thead>
                   <tr className="border-b border-glass-border">
                     <th className="text-left px-5 py-3.5 text-xs font-semibold text-cyber-300 uppercase tracking-wider">
-                      Status
+                      {t('rules.cols.status')}
                     </th>
                     <th className="text-left px-5 py-3.5 text-xs font-semibold text-cyber-300 uppercase tracking-wider">
-                      Rule Name
+                      {t('rules.cols.name')}
                     </th>
                     <th className="text-left px-5 py-3.5 text-xs font-semibold text-cyber-300 uppercase tracking-wider">
-                      Action
+                      {t('rules.cols.action')}
                     </th>
                     <th className="text-left px-5 py-3.5 text-xs font-semibold text-cyber-300 uppercase tracking-wider hidden md:table-cell">
-                      Conditions Count
+                      {t('rules.cols.conditions')}
                     </th>
                     <th className="text-right px-5 py-3.5 text-xs font-semibold text-cyber-300 uppercase tracking-wider">
-                      Actions
+                      {t('common.actions')}
                     </th>
                   </tr>
                 </thead>
@@ -187,7 +189,7 @@ const RulesPage: React.FC = () => {
                           </span>
                         </td>
                         <td className="px-5 py-4 text-cyber-400 font-mono text-xs hidden md:table-cell">
-                          {rule.conditions.length} condition{rule.conditions.length !== 1 ? 's' : ''}
+                          {t('rules.conditions_count', { count: rule.conditions.length })}
                         </td>
                         <td className="px-5 py-4 text-right">
                           <div className="flex items-center justify-end gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -195,7 +197,7 @@ const RulesPage: React.FC = () => {
                               id={`rules-edit-${rule.id}`}
                               onClick={() => setEditRule(rule)}
                               className="p-1.5 rounded-md text-cyber-300 hover:text-white hover:bg-cyber-700 transition-all cursor-pointer"
-                              title="Edit Rule"
+                              title={t('rules.edit_tooltip')}
                             >
                               <Edit2 size={14} />
                             </button>
@@ -203,7 +205,7 @@ const RulesPage: React.FC = () => {
                               id={`rules-delete-${rule.id}`}
                               onClick={() => setDeleteTarget(rule)}
                               className="p-1.5 rounded-md text-cyber-300 hover:text-accent-rose hover:bg-accent-rose/10 transition-all cursor-pointer"
-                              title="Delete Rule"
+                              title={t('rules.delete_tooltip')}
                             >
                               <Trash2 size={14} />
                             </button>
@@ -243,17 +245,15 @@ const RulesPage: React.FC = () => {
       {/* Delete confirmation Modal */}
       <ConfirmModal
         isOpen={!!deleteTarget}
-        title="Delete Signature Rule"
-        subtitle="This action is irreversible."
+        title={t('rules.delete_modal.title')}
+        subtitle={t('rules.delete_modal.subtitle')}
         description={
           <>
-            Are you sure you want to delete rule{' '}
-            <span className="font-semibold text-white">"{deleteTarget?.name}"</span>? Any traffic
-            matching this signature will no longer be intercepted.
+            {t('rules.delete_modal.description', { name: deleteTarget?.name })}
           </>
         }
-        confirmLabel="Delete"
-        cancelLabel="Cancel"
+        confirmLabel={t('rules.delete_modal.confirm')}
+        cancelLabel={t('rules.delete_modal.cancel')}
         variant="danger"
         isLoading={deleting}
         error={deleteError}

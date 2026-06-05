@@ -1,0 +1,187 @@
+{
+  "sidebar": {
+    "dashboard": "Дашборд",
+    "rule_management": "Управление правилами",
+    "access_control": "Контроль доступа",
+    "audit_logs": "Логи аудита",
+    "settings": "Настройки",
+    "waf_admin": "Админ WAF"
+  },
+  "header": {
+    "system_status": "Статус системы",
+    "live_feed": "Поток инцидентов",
+    "connected": "Подключено",
+    "disconnected": "Отключено",
+    "logout": "Выйти",
+    "admin": "Администратор"
+  },
+  "common": {
+    "loading": "Загрузка...",
+    "cancel": "Отмена",
+    "confirm": "Подтвердить",
+    "save": "Сохранить изменения",
+    "create": "Создать",
+    "delete": "Удалить",
+    "remove": "Удалить",
+    "actions": "Действия",
+    "refresh": "Обновить",
+    "status": "Статус",
+    "no_description": "Описание отсутствует",
+    "system_seeding": "Системная инициализация",
+    "logout": "Выйти"
+  },
+  "dashboard": {
+    "title": "Дашборд WAF",
+    "stats": {
+      "total_requests": "Всего запросов",
+      "total_requests_sub": "Проанализировано прокси WAF",
+      "ml_blocked": "Заблокировано AI ML",
+      "ml_blocked_sub": "Аномалии, обнаруженные моделью",
+      "static_blocked": "Заблокировано правилами",
+      "static_blocked_sub": "Совпадения со статическими правилами",
+      "redis_rate": "Частота запросов Redis (Lua)",
+      "redis_rate_sub": "Операций в секунду"
+    },
+    "timeline": {
+      "title": "Хронология угроз",
+      "subtitle": "Заблокированные события в минуту",
+      "ai_engine": "AI Модуль",
+      "signatures": "Сигнатуры",
+      "loading": "Загрузка хронологии..."
+    },
+    "distribution": {
+      "title": "Распределение атак",
+      "loading": "Загрузка распределения...",
+      "no_data": "Данные об атаках пока отсутствуют"
+    },
+    "top_ips": {
+      "title": "Топ заблокированных IP",
+      "loading": "Загрузка IP...",
+      "no_data": "Блокировки IP отсутствуют",
+      "blocks": "Блокировок"
+    },
+    "actions_chart": {
+      "title": "Метрики действий",
+      "loading": "Загрузка действий...",
+      "no_data": "Метрики действий отсутствуют",
+      "count": "Количество"
+    },
+    "incidents": {
+      "title": "Недавние инциденты",
+      "subtitle": "Последние зарегистрированные события в WAF",
+      "view_full": "Посмотреть все логи",
+      "loading": "Загрузка строк...",
+      "no_incidents": "Инциденты безопасности не зарегистрированы.",
+      "cols": {
+        "time": "Время",
+        "ip": "IP клиента",
+        "uri": "URI",
+        "classification": "Классификация",
+        "result": "Результат"
+      }
+    }
+  },
+  "rules": {
+    "title": "Правила защиты WAF",
+    "signature_rules": "Сигнатурные правила",
+    "rules_configured_one": "Настроено {{count}} правило",
+    "rules_configured_few": "Настроено {{count}} правила",
+    "rules_configured_many": "Настроено {{count}} правил",
+    "rules_configured_other": "Настроено {{count}} правил",
+    "load_defaults": "Загрузить базовые правила",
+    "add_rule": "Добавить правило",
+    "search_placeholder": "Поиск по названию, действию или значению...",
+    "loading_rules": "Загрузка сигнатурных правил...",
+    "no_rules": "Нет правил, соответствующих фильтрам",
+    "clear_search": "Попробуйте очистить строку поиска.",
+    "cols": {
+      "status": "Статус",
+      "name": "Название правила",
+      "action": "Действие",
+      "conditions": "Кол-во условий"
+    },
+    "conditions_count_one": "{{count}} условие",
+    "conditions_count_few": "{{count}} условия",
+    "conditions_count_many": "{{count}} условий",
+    "conditions_count_other": "{{count}} условий",
+    "edit_tooltip": "Редактировать правило",
+    "delete_tooltip": "Удалить правило",
+    "modal": {
+      "create_title": "Новое правило",
+      "edit_title": "Редактировать правило",
+      "rule_name": "Название правила",
+      "rule_name_placeholder": "например, Блокировка сканеров SQLMap",
+      "action": "Действие",
+      "conditions": "Условия",
+      "and_logic": "(логика AND)",
+      "add_condition": "Добавить",
+      "enable_immediately": "Включить сразу",
+      "errors": {
+        "name_required": "Название обязательно",
+        "name_max": "Максимум 64 символа",
+        "conditions_required": "Все поля условий обязательны",
+        "save_failed": "Не удалось сохранить правило. Пожалуйста, попробуйте снова."
+      }
+    },
+    "delete_modal": {
+      "title": "Удалить сигнатурное правило",
+      "subtitle": "Это действие необратимо.",
+      "description": "Вы уверены, что хотите удалить правило \"{{name}}\"? Любой трафик, соответствующий этой сигнатуре, больше не будет блокироваться.",
+      "confirm": "Удалить",
+      "cancel": "Отмена"
+    },
+    "condition": {
+      "condition_label": "Условие {{num}}",
+      "target": "Цель",
+      "operator": "Оператор",
+      "header_name": "Имя заголовка",
+      "header_placeholder": "например, User-Agent",
+      "value": "Значение",
+      "value_placeholder": "например, sqlmap, /admin/*, 192.168.1.1"
+    }
+  },
+  "access_control": {
+    "title": "Контроль доступа",
+    "ip_lists": "Списки IP-адресов",
+    "loading": "Загрузка...",
+    "addresses_count_one": "{{count}} адрес в текущем списке",
+    "addresses_count_few": "{{count}} адреса в текущем списке",
+    "addresses_count_many": "{{count}} адресов в текущем списке",
+    "addresses_count_other": "{{count}} адресов в текущем списке",
+    "add_ip": "Добавить IP-адрес",
+    "search_placeholder": "Поиск по IP-адресу или описанию...",
+    "loading_addresses": "Загрузка адресов...",
+    "no_matches": "Совпадений в активном фильтре не найдено",
+    "no_ips_yet": "В вашем {{tab}} пока нет IP-адресов",
+    "add_ip_helper": "Нажмите Добавить IP-адрес, чтобы зарегистрировать собственное правило обхода или блокировки.",
+    "cols": {
+      "ip": "IP-адрес",
+      "type": "Тип списка",
+      "description": "Описание",
+      "added_at": "Добавлен"
+    },
+    "remove_tooltip": "Удалить правило",
+    "modal": {
+      "title": "Добавить IP-адрес",
+      "ip_address": "IP-адрес",
+      "ip_placeholder": "например, 192.168.1.100 или 2001:db8::1",
+      "list_type": "Тип списка",
+      "description": "Описание",
+      "desc_placeholder": "Укажите контекст...",
+      "add_to_list": "Добавить в список",
+      "errors": {
+        "ip_required": "IP-адрес обязателен",
+        "ip_invalid": "Неверный формат IP-адреса (ожидается IPv4 или IPv6)",
+        "desc_max": "Максимум 255 символов",
+        "add_failed": "Не удалось добавить IP-адрес."
+      }
+    },
+    "delete_modal": {
+      "title": "Удалить из {{tab}}",
+      "subtitle": "Это действие необратимо.",
+      "description": "Вы уверены, что хотите удалить IP-адрес {{ip}} из {{tab}}?",
+      "confirm": "Удалить",
+      "cancel": "Отмена"
+    }
+  }
+}
