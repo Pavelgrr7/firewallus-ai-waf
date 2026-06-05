@@ -44,13 +44,12 @@ class WafAttackSimulation : Simulation() {
     init {
         setUp(
             // 50 обычных юзеров плавно заходят в течение 10 секунд
-            normalTraffic.injectOpen(rampUsers(50).during(10)),
-
+            normalTraffic.injectOpen(nothingFor(5), rampUsers(50).during(10)),
             // 20 хакеров бьют инъекциями
-            sqlInjectionAttack.injectOpen(atOnceUsers(20)),
+            sqlInjectionAttack.injectOpen(nothingFor(5), atOnceUsers(20)),
 
             // 1 спамер пытается положить сайт
-            rateLimitAttack.injectOpen(atOnceUsers(1))
+            rateLimitAttack.injectOpen(nothingFor(5), atOnceUsers(1))
         ).protocols(httpProtocol)
     }
 }
