@@ -26,7 +26,7 @@ class Rule(
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "conditions", columnDefinition = "jsonb", nullable = false)
-    var conditions: List<Condition>,
+    var rootNode: RuleNode,
 
     @Column(name = "is_active", nullable = false)
     var isActive: Boolean = false,

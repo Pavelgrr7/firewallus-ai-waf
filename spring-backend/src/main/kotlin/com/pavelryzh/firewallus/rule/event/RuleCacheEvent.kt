@@ -1,8 +1,8 @@
 package com.pavelryzh.firewallus.rule.event
 
 import com.pavelryzh.firewallus.rule.domain.Action
-import com.pavelryzh.firewallus.rule.domain.Condition
-import java.util.UUID
+import com.pavelryzh.firewallus.rule.domain.RuleNode
+import java.util.*
 
 sealed class RuleCacheEvent {
     abstract val adminId: UUID?
@@ -11,7 +11,7 @@ sealed class RuleCacheEvent {
         val ruleId: Int,
         val name: String,
         val action: Action,
-        val conditions: List<Condition>,
+        val rootNode: RuleNode,
         val isActive: Boolean,
         override val adminId: UUID?
     ) : RuleCacheEvent()
