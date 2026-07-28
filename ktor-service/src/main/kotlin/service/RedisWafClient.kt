@@ -40,7 +40,6 @@ class RedisWafClient(redisUri: String) : AutoCloseable {
 
     private val logger = logger()
 
-
     @Volatile
     private var rateLimitScriptSha: String? = null
 

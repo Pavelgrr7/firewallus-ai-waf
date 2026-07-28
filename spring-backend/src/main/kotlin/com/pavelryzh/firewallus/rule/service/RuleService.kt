@@ -1,16 +1,16 @@
 package com.pavelryzh.firewallus.rule.service
 
 import com.pavelryzh.firewallus.infra.security.CurrentAdminProvider
-import com.pavelryzh.firewallus.rule.event.RuleCacheEvent
 import com.pavelryzh.firewallus.rule.api.CreateRuleDto
 import com.pavelryzh.firewallus.rule.api.UpdateRuleDto
 import com.pavelryzh.firewallus.rule.api.toEntity
 import com.pavelryzh.firewallus.rule.domain.Rule
 import com.pavelryzh.firewallus.rule.domain.RuleNotFoundException
+import com.pavelryzh.firewallus.rule.event.RuleCacheEvent
 import com.pavelryzh.firewallus.rule.port.RuleRepository
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
-import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -48,7 +48,7 @@ class RuleService(
         val rule = ruleRepo.findById(id).orElseThrow { RuleNotFoundException(id) }
         updateDto.name?.let { rule.name = it }
         updateDto.action?.let { rule.action = it }
-        updateDto.conditions?.let { rule.conditions = it }
+        updateDto.rootNode?.let { rule.rootNode = it }
         publishSavedEvent(rule)
         return rule
     }
@@ -75,7 +75,7 @@ class RuleService(
             ruleId = rule.id!!,
             name = rule.name,
             action = rule.action,
-            conditions = rule.conditions,
+            rootNode = rule.rootNode,
             isActive = rule.isActive,
             adminId = currentAdminProvider.getCurrentAdminId()
 
