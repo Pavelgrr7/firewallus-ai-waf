@@ -2,6 +2,7 @@ package com.pavelryzh.firewallus.infra.db
 
 import com.pavelryzh.firewallus.rule.domain.Action
 import com.pavelryzh.firewallus.rule.domain.Condition
+import com.pavelryzh.firewallus.rule.domain.ConditionNode
 import com.pavelryzh.firewallus.rule.domain.Operator
 import com.pavelryzh.firewallus.rule.domain.Rule
 import com.pavelryzh.firewallus.rule.port.RuleRepository
@@ -39,7 +40,7 @@ class DefaultRulesSeeder(
                     ruleId = rule.id!!,
                     name = rule.name,
                     action = rule.action,
-                    conditions = rule.conditions,
+                    rootNode = rule.rootNode,
                     isActive = rule.isActive,
                     adminId = null
                 )
@@ -67,51 +68,43 @@ class DefaultRulesSeeder(
                 name = "Block SQLi (Basic URI)",
                 action = Action.BLOCK,
                 isActive = true,
-                conditions = listOf(
-                    Condition(
-                        target = Target.URI,
-                        operator = Operator.REGEX,
-                        //  union select, drop table, OR 1=1
-                        value = "(?i)(union\\s+select|select\\s+.*\\s+from|drop\\s+table|1=1)"
-                    )
+                rootNode = ConditionNode(
+                    target = Target.URI,
+                    operator = Operator.REGEX,
+                    //  union select, drop table, OR 1=1
+                    value = "(?i)(union\\s+select|select\\s+.*\\s+from|drop\\s+table|1=1)"
                 )
             ),
             Rule(
                 name = "Block XSS (Cross-Site Scripting)",
                 action = Action.BLOCK,
                 isActive = true,
-                conditions = listOf(
-                    Condition(
+                rootNode = ConditionNode(
                         target = Target.URI,
                         operator = Operator.REGEX,
                         // теги <script> или псевдопротокол javascript:
                         value = "(?i)(<script.*?>|javascript:)"
-                    )
                 )
             ),
             Rule(
                 name = "Block Path Traversal (LFI)",
                 action = Action.BLOCK,
                 isActive = true,
-                conditions = listOf(
-                    Condition(
+                rootNode = ConditionNode(
                         target = Target.URI,
                         operator = Operator.CONTAINS,
                         value = "etc/passwd"
-                    )
                 )
             ),
             Rule(
                 name = "Block Known Scanners (SQLMap)",
                 action = Action.BLOCK,
                 isActive = true,
-                conditions = listOf(
-                    Condition(
+                rootNode = ConditionNode(
                         target = Target.HEADER,
                         targetKey = "User-Agent",
                         operator = Operator.CONTAINS,
                         value = "sqlmap"
-                    )
                 )
             )
         )
@@ -124,7 +117,7 @@ class DefaultRulesSeeder(
                     ruleId = savedRule.id!!,
                     name = savedRule.name,
                     action = savedRule.action,
-                    conditions = savedRule.conditions,
+                    rootNode = savedRule.rootNode,
                     isActive = savedRule.isActive,
                     adminId = null
                 )
