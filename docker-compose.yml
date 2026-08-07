@@ -30,8 +30,6 @@ services:
         condition: service_started
       kafka:
         condition: service_healthy
-#    deploy:
-#      replicas: 2
 
   postgres:
     image: 'postgres:18'
