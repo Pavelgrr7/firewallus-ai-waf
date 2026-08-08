@@ -24,7 +24,7 @@ class WafStressSimulation: Simulation() {
         .exec(http("Stress Ping").get("/").header("X-Forwarded-For", "#{randomIp}"))
 
     init {
-        println("Запуск нагрузочного тестирования на URL: $targetUrl")
+        println("Starting Load Test on target URL: $targetUrl")
         setUp(
             stressScenario.injectOpen(
                 // Плавный разгон от 10 до 1000 запросов в секунду за 3 минуты!

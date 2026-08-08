@@ -56,4 +56,8 @@ gatling {
     systemProperties = mapOf(
         "wafTargetUrl" to (System.getProperty("wafTargetUrl") ?: "http://localhost:80")
     )
+    jvmArgs = listOf(
+        "--add-opens=java.base/java.lang=ALL-UNNAMED",
+        "--add-opens=java.base/java.util=ALL-UNNAMED"
+    )
 }
