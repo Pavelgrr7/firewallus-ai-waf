@@ -77,7 +77,7 @@ val myWorkflow = workflow(
 
         run(
             name = "Run Gatling Tests",
-            command = "cd ktor-service && chmod +x gradlew && ./gradlew gatlingRun --no-daemon -Dorg.gradle.jvmargs=-Xmx512m"
+            command = "cd ktor-service && chmod +x gradlew && ./gradlew gatlingRun --simulation com.pavelryzh.firewallus.WafAttackSimulation --no-daemon -Dorg.gradle.jvmargs=-Xmx512m"
         )
 
         uses(

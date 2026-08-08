@@ -1,3 +1,5 @@
+package com.pavelryzh.firewallus
+
 import io.gatling.javaapi.core.*
 import io.gatling.javaapi.core.CoreDsl.*
 import io.gatling.javaapi.http.HttpDsl.*
@@ -61,15 +63,6 @@ class WafAttackSimulation : Simulation() {
 
             // 1 спамер пытается положить сайт
             rateLimitAttack.injectOpen(nothingFor(5), atOnceUsers(1))
-        ).protocols(httpProtocol)
-    }
-    init {
-        setUp(
-            // Сценарий "Легитимные пользователи"
-            normalTraffic.injectOpen(
-                // Плавно поднимаем нагрузку от 10 запросов в секунду до 500 запросов в секунду в течение 2 минут!
-                rampUsersPerSec(10.0).to(500.0).during(120)
-            )
         ).protocols(httpProtocol)
     }
 }

@@ -44,3 +44,9 @@ dependencies {
     testImplementation(libs.ktor.server.test.host)
     testImplementation(libs.kotlin.test.junit)
 }
+
+gatling {
+    systemProperties = mapOf(
+        "wafTargetUrl" to (System.getProperty("wafTargetUrl") ?: "http://localhost:80")
+    )
+}
