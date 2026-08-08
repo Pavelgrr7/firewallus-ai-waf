@@ -19,7 +19,6 @@ kotlin {
 dependencies {
     implementation(libs.koin.ktor)
     implementation(libs.koin.logger.slf4j)
-    implementation(libs.kafka.clients)
     implementation(libs.ktor.client.core)
     implementation(libs.ktor.server.content.negotiation)
     implementation(libs.ktor.server.core)
@@ -32,14 +31,22 @@ dependencies {
     implementation(libs.ktor.server.forwarded.header)
     implementation(libs.ktor.server.cors)
     implementation(libs.ktor.server.netty)
-    implementation(libs.logback.classic)
     implementation(libs.ktor.server.config.yaml)
     implementation("io.lettuce:lettuce-core:6.3.2.RELEASE")
     implementation("io.ktor:ktor-client-core:3.4.0")
     implementation("io.ktor:ktor-client-cio:3.4.0")
     implementation("io.ktor:ktor-client-content-negotiation:3.4.0")
+    implementation("io.netty:netty-codec-http2:4.1.137.Final") {
+        because("Fixes CVE-2026-33871")
+    }
+    implementation("ch.qos.logback:logback-core:1.5.37") {
+        because("Fixes CVE-2025-11226")
+    }
+    implementation("org.apache.kafka:kafka-clients:3.9.2") {
+        because("Fixes CVE-2025-27817")
+    }
 
-    gatlingImplementation("io.gatling.highcharts:gatling-charts-highcharts:3.11.5")
+    gatlingImplementation("io.gatling.highcharts:gatling-charts-highcharts:3.14.7")
 
     testImplementation(libs.ktor.server.test.host)
     testImplementation(libs.kotlin.test.junit)
