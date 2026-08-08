@@ -128,3 +128,8 @@ services:
         limits:
           cpus: '0.2'
           memory: 128M
+
+volumes:
+  pg_data:
+  redis_data:
+  kafka_data:
