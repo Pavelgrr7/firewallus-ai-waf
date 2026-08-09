@@ -6,6 +6,7 @@ import io.gatling.javaapi.http.HttpDsl.*
 import kotlin.random.Random
 
 class WafStressSimulation: Simulation() {
+    // ./gradlew gatlingRun --simulation com.pavelryzh.firewallus.WafStressSimulation -DwafTargetUrl=http://127.0.0.1:3000 | tee gatling-summary.txt
     private val targetUrl = System.getenv("WAF_TARGET_URL")
         ?: System.getProperty("wafTargetUrl")
         ?: "http://localhost:80"
@@ -21,14 +22,15 @@ class WafStressSimulation: Simulation() {
 
     private val stressScenario = scenario("Stress Test")
         .feed(randomIpFeeder)
-        .exec(http("Stress Ping").get("/").header("X-Forwarded-For", "#{randomIp}"))
+        .repeat(200).on(
+            exec(http("Stress Ping").get("/").header("X-Forwarded-For", "#{randomIp}"))
+        )
 
     init {
-        println("Starting Load Test on target URL: $targetUrl")
         setUp(
-            stressScenario.injectOpen(
-                // Плавный разгон от 10 до 1000 запросов в секунду за 3 минуты!
-                rampUsersPerSec(10.0).to(1000.0).during(180))
+            // 450 пользователей
+            // Сгенерируют 90 000 запросов
+            stressScenario.injectClosed(constantConcurrentUsers(450).during(180))
         ).protocols(httpProtocol)
     }
 }
