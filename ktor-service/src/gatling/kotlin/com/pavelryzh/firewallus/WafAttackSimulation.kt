@@ -1,3 +1,5 @@
+package com.pavelryzh.firewallus
+
 import io.gatling.javaapi.core.*
 import io.gatling.javaapi.core.CoreDsl.*
 import io.gatling.javaapi.http.HttpDsl.*
