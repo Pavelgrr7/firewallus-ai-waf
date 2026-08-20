@@ -51,15 +51,24 @@ jobs:
 
     - name: Build Kotlin & Java Microservices
       if: matrix.build-mode == 'manual'
-      env:
-        GRADLE_OPTS: "-Xmx2048m -XX:+UseParallelGC"
       run: |
-        echo "Building Ktor Gateway..."
-        cd ktor-service && chmod +x gradlew && ./gradlew classes --no-daemon -Dkotlin.daemon.jvmargs="-Xmx2560m"
+        echo "1. Создаем глобальную конфигурацию памяти для Gradle и Kotlin"
+        mkdir -p ~/.gradle
+        cat << 'EOF' > ~/.gradle/gradle.properties
+        org.gradle.jvmargs=-Xmx2048m -XX:+UseParallelGC
+        kotlin.daemon.jvmargs=-Xmx3072m -XX:+UseParallelGC -XX:-UseGCOverheadLimit
+        EOF
+
+        echo "2. Сборка Ktor Gateway"
+        cd ktor-service
+        chmod +x gradlew
+        ./gradlew classes --no-daemon
         cd ..
         
-        echo "Building Spring Boot Core..."
-        cd spring-backend && chmod +x gradlew && ./gradlew classes --no-daemon -Dkotlin.daemon.jvmargs="-Xmx2560m"
+        echo "3. Сборка Spring Boot Core"
+        cd spring-backend
+        chmod +x gradlew
+        ./gradlew classes --no-daemon
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v3
