@@ -51,13 +51,15 @@ jobs:
 
     - name: Build Kotlin & Java Microservices
       if: matrix.build-mode == 'manual'
+      env:
+        GRADLE_OPTS: "-Xmx2048m -XX:+UseParallelGC"
       run: |
         echo "Building Ktor Gateway..."
-        cd ktor-service && chmod +x gradlew && ./gradlew classes --no-daemon
+        cd ktor-service && chmod +x gradlew && ./gradlew classes --no-daemon -Dkotlin.daemon.jvmargs="-Xmx2560m"
         cd ..
         
         echo "Building Spring Boot Core..."
-        cd spring-backend && chmod +x gradlew && ./gradlew classes --no-daemon
+        cd spring-backend && chmod +x gradlew && ./gradlew classes --no-daemon -Dkotlin.daemon.jvmargs="-Xmx2560m"
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v3
