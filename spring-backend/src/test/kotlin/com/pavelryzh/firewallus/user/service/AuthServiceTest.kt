@@ -1,4 +1,4 @@
-package com.pavelryzh.firewallus.user.service;
+package com.pavelryzh.firewallus.user.service
 
 import com.pavelryzh.firewallus.infra.security.JwtTokenService
 import com.pavelryzh.firewallus.user.api.LoginDto
@@ -26,7 +26,6 @@ import java.util.UUID
 
 @ExtendWith(MockitoExtension::class)
 class AuthServiceTest {
-
     @Mock
     lateinit var adminRepository: AdminRepository
 
@@ -44,9 +43,10 @@ class AuthServiceTest {
     val expectedToken = "jwt.token.abc"
     val username = "test_admin"
     val password = "test_password"
-    val admin = Admin(username, fakeHash).apply {
-        id = fakeAdminId
-    }
+    val admin =
+        Admin(username, fakeHash).apply {
+            id = fakeAdminId
+        }
     val login = LoginDto(username, password)
 
     @InjectMocks
@@ -57,7 +57,6 @@ class AuthServiceTest {
 
     @Test
     fun `authenticate with valid credentials should return actual jwt token`() {
-
         whenever(passwordEncoder.matches(password, fakeHash)).thenReturn(true)
         whenever(jwtTokenService.generateToken(any())).thenReturn(expectedToken)
         whenever(adminRepository.findByUsername(any())).thenReturn(admin)
@@ -76,7 +75,6 @@ class AuthServiceTest {
 
     @Test
     fun `authenticate should throw BCE when repository return null`() {
-
         whenever(adminRepository.findByUsername(any())).thenReturn(null)
 
         assertThrows<BadCredentialsException> {
@@ -85,12 +83,10 @@ class AuthServiceTest {
 
         // authenticate pipeline should interrupt
         verifyNoInteractions(passwordEncoder, jwtTokenService, eventPublisher)
-
     }
 
     @Test
     fun `authenticate should throw BCE when password is incorrect`() {
-
         whenever(adminRepository.findByUsername(any())).thenReturn(admin)
         whenever(passwordEncoder.matches(password, fakeHash)).thenReturn(false)
 
@@ -99,6 +95,5 @@ class AuthServiceTest {
         }
 
         verifyNoInteractions(jwtTokenService, eventPublisher)
-
     }
 }

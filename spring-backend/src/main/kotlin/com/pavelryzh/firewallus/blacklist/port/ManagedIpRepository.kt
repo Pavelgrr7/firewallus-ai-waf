@@ -8,7 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
 import org.springframework.stereotype.Repository
-import java.util.*
+import java.util.UUID
 
 @Repository
 interface ManagedIpRepository : JpaRepository<ManagedIp, UUID> {
@@ -37,6 +37,6 @@ interface ManagedIpRepository : JpaRepository<ManagedIp, UUID> {
     fun findByIpAddress(address: String): ManagedIp?
 
     @Modifying
-    @Query("DELETE FROM ManagedIp ip WHERE ip.id = :ipId")
+    @Query("DELETE FROM ManagedIp ip WHERE ip.ipAddress = :address")
     fun deleteAllByIpAddress(address: String)
 }

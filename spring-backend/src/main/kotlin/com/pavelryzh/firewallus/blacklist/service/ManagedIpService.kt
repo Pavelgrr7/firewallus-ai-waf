@@ -14,36 +14,41 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.util.*
 
-
 @Service
 class ManagedIpService(
     private val ipRepo: ManagedIpRepository,
     private val eventPublisher: ApplicationEventPublisher,
     private val currentAdminProvider: CurrentAdminProvider,
-    ) {
-
+) {
     @Transactional(readOnly = true)
-    fun getIps(listType: IpListType?, pageable: Pageable): Page<ManagedIp> {
-        return if (listType != null) {
+    fun getIps(
+        listType: IpListType?,
+        pageable: Pageable,
+    ): Page<ManagedIp> =
+        if (listType != null) {
             ipRepo.findByListType(listType, pageable)
         } else {
             ipRepo.findAll(pageable)
         }
-    }
 
     @Transactional
-    fun addIp(ipAddress: String, type: IpListType, description: String?): ManagedIp {
+    fun addIp(
+        ipAddress: String,
+        type: IpListType,
+        description: String?,
+    ): ManagedIp {
         val validIp = IpAddress(ipAddress)
 
         ipRepo.findByIpAddress(validIp.value)?.let { existingIp ->
             throw IllegalArgumentException("IP ${validIp.value} уже находится в ${existingIp.listType}")
         }
 
-        val newIp = ManagedIp(
-            ipAddress = ipAddress,
-            listType = type,
-            description = description
-        )
+        val newIp =
+            ManagedIp(
+                ipAddress = ipAddress,
+                listType = type,
+                description = description,
+            )
         val saved = ipRepo.save(newIp)
 
         val adminId = currentAdminProvider.getCurrentAdminId()
@@ -56,10 +61,12 @@ class ManagedIpService(
 
     @Transactional
     fun removeIpById(id: UUID) {
-        val ip = ipRepo.findById(id).orElseThrow {
-            EntityNotFoundException("ManagedIp not found: $id")
-        }
         val adminId = currentAdminProvider.getCurrentAdminId()
+
+        val ip =
+            ipRepo.findById(id).orElseThrow {
+                EntityNotFoundException("ManagedIp not found: $id")
+            }
 
         ipRepo.deleteById(id)
         eventPublisher.publishEvent(ManagedIpEvent.Removed(ip.ipAddress, ip.listType, adminId))
@@ -67,18 +74,18 @@ class ManagedIpService(
 
     @Transactional
     fun removeIpByAddress(ipAddress: String) {
+        val adminId = currentAdminProvider.getCurrentAdminId()
+
         val ip = ipRepo.findByIpAddress(ipAddress) ?: return
 
         ipRepo.delete(ip)
-
-        val adminId = currentAdminProvider.getCurrentAdminId()
 
         eventPublisher.publishEvent(
             ManagedIpEvent.Removed(
                 ipAddress = ip.ipAddress,
                 listType = ip.listType,
-                adminId = adminId
-            )
+                adminId = adminId,
+            ),
         )
     }
 }
