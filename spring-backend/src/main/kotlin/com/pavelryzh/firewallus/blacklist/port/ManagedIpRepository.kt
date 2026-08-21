@@ -5,12 +5,13 @@ import com.pavelryzh.firewallus.blacklist.domain.ManagedIp
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.data.jpa.repository.Modifying
+import org.springframework.data.jpa.repository.Query
 import org.springframework.stereotype.Repository
 import java.util.UUID
 
 @Repository
 interface ManagedIpRepository : JpaRepository<ManagedIp, UUID> {
-
     /**
      * Возвращает страницу IP-адресов, отфильтрованную по типу списка (BLACKLIST/WHITELIST).
      *
@@ -22,7 +23,10 @@ interface ManagedIpRepository : JpaRepository<ManagedIp, UUID> {
      *    SQL: SELECT * FROM ip_lists WHERE list_type = ? LIMIT ? OFFSET ?;
      */
 
-    fun findByListType(listType: IpListType, pageable: Pageable): Page<ManagedIp>
+    fun findByListType(
+        listType: IpListType,
+        pageable: Pageable,
+    ): Page<ManagedIp>
 
     /**
      * Ищет конкретный IP-адрес в списках доступа.
@@ -33,4 +37,15 @@ interface ManagedIpRepository : JpaRepository<ManagedIp, UUID> {
      */
 
     fun findByIpAddress(address: String): ManagedIp?
+
+    /**
+     * Удаляет запись(-и), соответствующие адресу:
+     *
+     * @param address
+     *
+     * Требует обязательное использование @Transactional при вызове
+     */
+    @Modifying
+    @Query("DELETE FROM ManagedIp ip WHERE ip.ipAddress = :address")
+    fun deleteByIpAddress(address: String)
 }

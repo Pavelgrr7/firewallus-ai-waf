@@ -1,4 +1,5 @@
 package com.pavelryzh.firewallus.blacklist.service
+
 import com.pavelryzh.firewallus.blacklist.domain.IpListType
 import com.pavelryzh.firewallus.blacklist.domain.ManagedIp
 import com.pavelryzh.firewallus.blacklist.event.ManagedIpEvent
@@ -20,7 +21,9 @@ import java.util.*
 @ExtendWith(MockitoExtension::class)
 class ManagedIpServiceTest {
     @Mock lateinit var ipRepo: ManagedIpRepository
+
     @Mock lateinit var eventPublisher: ApplicationEventPublisher
+
     @Mock lateinit var currentAdminProvider: CurrentAdminProvider
 
     @InjectMocks lateinit var managedIpService: ManagedIpService
@@ -49,9 +52,10 @@ class ManagedIpServiceTest {
         val existingIp = ManagedIp("10.0.0.1", IpListType.WHITELIST)
         whenever(ipRepo.findByIpAddress("10.0.0.1")).thenReturn(existingIp)
 
-        val exception = assertThrows<IllegalArgumentException> {
-            managedIpService.addIp("10.0.0.1", IpListType.BLACKLIST, null)
-        }
+        val exception =
+            assertThrows<IllegalArgumentException> {
+                managedIpService.addIp("10.0.0.1", IpListType.BLACKLIST, null)
+            }
         assertTrue(exception.message!!.contains("уже находится в WHITELIST"))
         verify(eventPublisher, never()).publishEvent(any()) // Событие не улетело
     }
