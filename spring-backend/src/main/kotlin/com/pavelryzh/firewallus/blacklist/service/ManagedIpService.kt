@@ -64,4 +64,21 @@ class ManagedIpService(
         ipRepo.deleteById(id)
         eventPublisher.publishEvent(ManagedIpEvent.Removed(ip.ipAddress, ip.listType, adminId))
     }
+
+    @Transactional
+    fun removeIpByAddress(ipAddress: String) {
+        val ip = ipRepo.findByIpAddress(ipAddress) ?: return
+
+        ipRepo.delete(ip)
+
+        val adminId = currentAdminProvider.getCurrentAdminId()
+
+        eventPublisher.publishEvent(
+            ManagedIpEvent.Removed(
+                ipAddress = ip.ipAddress,
+                listType = ip.listType,
+                adminId = adminId
+            )
+        )
+    }
 }
