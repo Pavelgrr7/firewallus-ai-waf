@@ -45,7 +45,7 @@ class ManagedIpService(
 
         val newIp =
             ManagedIp(
-                ipAddress = ipAddress,
+                ipAddress = validIp.value,
                 listType = type,
                 description = description,
             )
@@ -76,7 +76,7 @@ class ManagedIpService(
     fun removeIpByAddress(ipAddress: String) {
         val adminId = currentAdminProvider.getCurrentAdminId()
 
-        val ip = ipRepo.findByIpAddress(ipAddress) ?: return
+        val ip = ipRepo.findByIpAddress(ipAddress) ?: throw EntityNotFoundException("ManagedIp not found: $ipAddress")
 
         ipRepo.delete(ip)
 

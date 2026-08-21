@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestControllerAdvice
 import org.springframework.web.context.request.async.AsyncRequestNotUsableException
+import org.springframework.security.access.AccessDeniedException
 import java.time.Instant
 
 data class ErrorResponse(
@@ -35,22 +36,12 @@ class GlobalExceptionHandler {
             message = ex.message,
         )
 
-    @ExceptionHandler(Exception::class)
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    fun handleAllExceptions(ex: Exception): ErrorResponse {
-        logger.error("Unhandled exception", ex)
-        return ErrorResponse(
-            error = "INTERNAL_SERVER_ERROR",
-            message = "Произошла внутренняя ошибка сервера",
-        )
-    }
-
     @ExceptionHandler(BadCredentialsException::class)
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     fun handleBadCredentialsException(ex: BadCredentialsException): ErrorResponse {
         logger.warn("Bad credentials exception", ex)
         return ErrorResponse(
-            error = "Bad credentials exception",
+            error = "BAD_CREDENTIALS",
             message = "Incorrect credentials: check login or password",
         )
     }
@@ -67,5 +58,15 @@ class GlobalExceptionHandler {
                 "${it.field}: ${it.defaultMessage}"
             }
         return ErrorResponse("VALIDATION_FAILED", errorMessage)
+    }
+
+    @ExceptionHandler(Exception::class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    fun handleAllExceptions(ex: Exception): ErrorResponse {
+        logger.error("Unhandled exception", ex)
+        return ErrorResponse(
+            error = "INTERNAL_SERVER_ERROR",
+            message = "Произошла внутренняя ошибка сервера",
+        )
     }
 }

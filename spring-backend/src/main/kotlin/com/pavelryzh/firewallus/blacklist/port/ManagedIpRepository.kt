@@ -12,7 +12,6 @@ import java.util.UUID
 
 @Repository
 interface ManagedIpRepository : JpaRepository<ManagedIp, UUID> {
-
     /**
      * Возвращает страницу IP-адресов, отфильтрованную по типу списка (BLACKLIST/WHITELIST).
      *
@@ -24,7 +23,10 @@ interface ManagedIpRepository : JpaRepository<ManagedIp, UUID> {
      *    SQL: SELECT * FROM ip_lists WHERE list_type = ? LIMIT ? OFFSET ?;
      */
 
-    fun findByListType(listType: IpListType, pageable: Pageable): Page<ManagedIp>
+    fun findByListType(
+        listType: IpListType,
+        pageable: Pageable,
+    ): Page<ManagedIp>
 
     /**
      * Ищет конкретный IP-адрес в списках доступа.
@@ -36,7 +38,14 @@ interface ManagedIpRepository : JpaRepository<ManagedIp, UUID> {
 
     fun findByIpAddress(address: String): ManagedIp?
 
+    /**
+     * Удаляет запись(-и), соответствующие адресу:
+     *
+     * @param address
+     *
+     * Требует обязательное использование @Transactional при вызове
+     */
     @Modifying
     @Query("DELETE FROM ManagedIp ip WHERE ip.ipAddress = :address")
-    fun deleteAllByIpAddress(address: String)
+    fun deleteByIpAddress(address: String)
 }
