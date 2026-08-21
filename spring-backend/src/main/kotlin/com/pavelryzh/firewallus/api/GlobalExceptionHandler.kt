@@ -8,6 +8,8 @@ import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestControllerAdvice
 import java.time.Instant
 import  org.slf4j.Logger
+import org.springframework.security.authentication.BadCredentialsException
+import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.context.request.async.AsyncRequestNotUsableException
 
 data class ErrorResponse(
@@ -42,6 +44,32 @@ class GlobalExceptionHandler {
             error = "INTERNAL_SERVER_ERROR",
             message = "Произошла внутренняя ошибка сервера"
         )
-
     }
+
+    @ExceptionHandler(BadCredentialsException::class)
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    fun handleBadCredentialsException(ex: BadCredentialsException): ErrorResponse {
+        logger.error("Bad credentials exception", ex)
+        return ErrorResponse(
+            error = "Bad credentials exception",
+            message = ex.message
+        )
+    }
+
+    @ExceptionHandler(AccessDeniedException::class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    fun handleAccessDenied(ex: AccessDeniedException): ErrorResponse {
+        return ErrorResponse("FORBIDDEN", "Доступ запрещен: недостаточно прав")
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException::class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    fun handleValidationErrors(ex: MethodArgumentNotValidException): ErrorResponse {
+        val errorMessage = ex.bindingResult.fieldErrors.joinToString("; ") {
+            "${it.field}: ${it.defaultMessage}"
+        }
+        return ErrorResponse("VALIDATION_FAILED", errorMessage)
+    }
+
+
 }
